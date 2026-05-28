@@ -1,0 +1,17 @@
+# Configurações locais e chaves privadas
+.env
+
+# Banco de dados local (Fallback)
+orders.db
+
+# Cache de compilação do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Ambientes virtuais
+venv/
+.venv/
+env/

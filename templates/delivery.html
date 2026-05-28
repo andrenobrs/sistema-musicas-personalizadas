@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sua Música Personalizada — Amor em Canção</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100&q=80">
+    <!-- CSS Estilos Premium -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Font Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Vinil no player de entrega */
+        .delivery-vinyl-disc {
+            width: 140px;
+            height: 140px;
+            background: #111;
+            border-radius: 50%;
+            background-image: radial-gradient(circle, #333 10%, #111 30%, #222 40%, #111 60%, #222 70%, #111 85%);
+            border: 3px solid #111;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+            margin: 0 auto 1.5rem;
+            animation: rotate 5s linear infinite;
+            animation-play-state: paused; /* Só gira quando tocando */
+        }
+        .delivery-vinyl-disc img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid white;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cabeçalho Principal -->
+    <header class="brand-header">
+        <h1>Amor em Canção</h1>
+        <p>Um presente eterno esculpido em forma de som</p>
+    </header>
+
+    <!-- Área Principal de Entrega -->
+    <main class="app-container">
+        
+        {% if is_expired %}
+            <!-- Tela de Expirado -->
+            <div class="glass-card text-center" style="padding: 4rem 2rem;">
+                <div style="font-size: 4rem; margin-bottom: 1.5rem;">⏳</div>
+                <h2 class="step-title">Link Expirado</h2>
+                <p class="step-subtitle">
+                    Por motivos de armazenamento e privacidade, as músicas personalizadas geradas são removidas automaticamente após 30 dias da criação.
+                </p>
+                <a href="/" class="btn-pink" style="display: inline-flex; margin-top: 1.5rem;">
+                    Criar Nova Música <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        {% else %}
+            
+            <div class="glass-card">
+                
+                <!-- Layout de Duas Colunas (Player e Letra) -->
+                <div class="delivery-layout">
+                    
+                    <!-- COLUNA ESQUERDA: Player e Ações -->
+                    <div class="delivery-song-info">
+                        
+                        <!-- Vinil Interativo que Gira com o Som -->
+                        <div class="delivery-vinyl-disc" id="vinyl-disc">
+                            <img src="{{ order.image_url or 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=300&q=80' }}" alt="Capa do Álbum">
+                        </div>
+                        
+                        <h2 class="delivery-title">{{ order.occasion }} para Você</h2>
+                        <p class="delivery-meta">Uma canção de <strong>{{ order.giver_name }}</strong> dedicada a <strong>{{ order.receiver_name }}</strong></p>
+                        
+                        <!-- Elemento de Áudio HTML Oculto -->
+                        <audio id="audio-element" src="{{ order.audio_url }}"></audio>
+                        
+                        <!-- Player Customizado Premium -->
+                        <div class="audio-player-container">
+                            <div class="audio-controls">
+                                <button type="button" class="play-pause-btn" id="play-pause-btn">
+                                    <i class="fa-solid fa-play" id="play-icon"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Barra de Progresso Interativa -->
+                            <div class="audio-progress-bar" id="audio-progress-bar">
+                                <div class="audio-progress-fill" id="audio-progress-fill"></div>
+                            </div>
+                            
+                            <!-- Contadores de Tempo -->
+                            <div class="audio-time-row">
+                                <span id="current-time">00:00</span>
+                                <span id="total-duration">--:--</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de Ações -->
+                        <div class="delivery-actions">
+                            <a href="{{ order.audio_url }}" download="Minha_Musica_Personalizada.mp3" target="_blank" class="btn-pink btn-full" id="btn-download">
+                                <i class="fa-solid fa-download"></i> Baixar MP3
+                            </a>
+                            
+                            <button type="button" class="btn-secondary btn-full" id="btn-share-whatsapp" style="border-color: #25D366; color: #25D366;">
+                                <i class="fa-brands fa-whatsapp"></i> Compartilhar no WhatsApp
+                            </button>
+                        </div>
+                        
+                        <!-- Aviso de Expiração -->
+                        <div class="expiration-notice">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Este presente musical estará disponível até {{ order.expires_at[:10] }} (30 dias).</span>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- COLUNA DIREITA: Letra da Música -->
+                    <div class="lyrics-box">
+                        <div class="lyrics-title-tag">Letra da Canção</div>
+                        <div class="lyrics-content">
+                            {{ order.lyrics }}
+                        </div>
+                    </div>
+                    
+                </div>
+                
+            </div>
+            
+        {% endif %}
+        
+    </main>
+
+    <!-- Rodapé -->
+    <footer>
+        <p>&copy; 2026 Amor em Canção. Todos os direitos reservados. Feito com amor em português.</p>
+    </footer>
+
+    <!-- Lógica de Controle do Player Customizado e Compartilhamento -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const audio = document.getElementById("audio-element");
+            const playPauseBtn = document.getElementById("play-pause-btn");
+            const playIcon = document.getElementById("play-icon");
+            const progressBar = document.getElementById("audio-progress-bar");
+            const progressFill = document.getElementById("audio-progress-fill");
+            const currentTimeEl = document.getElementById("current-time");
+            const totalDurationEl = document.getElementById("total-duration");
+            const vinylDisc = document.getElementById("vinyl-disc");
+            const btnShareWhatsapp = document.getElementById("btn-share-whatsapp");
+
+            if (!audio) return;
+
+            // --- CONTROLE DE PLAY / PAUSE ---
+            playPauseBtn.addEventListener("click", () => {
+                if (audio.paused) {
+                    audio.play();
+                } else {
+                    audio.pause();
+                }
+            });
+
+            audio.addEventListener("play", () => {
+                playIcon.className = "fa-solid fa-pause";
+                vinylDisc.style.animationPlayState = "running";
+            });
+
+            audio.addEventListener("pause", () => {
+                playIcon.className = "fa-solid fa-play";
+                vinylDisc.style.animationPlayState = "paused";
+            });
+
+            // --- ATUALIZAÇÃO DE PROGRESSO ---
+            audio.addEventListener("timeupdate", () => {
+                const current = audio.currentTime;
+                const duration = audio.duration;
+                
+                if (duration) {
+                    const percentage = (current / duration) * 100;
+                    progressFill.style.width = `${percentage}%`;
+                    currentTimeEl.innerText = formatTime(current);
+                }
+            });
+
+            audio.addEventListener("loadedmetadata", () => {
+                totalDurationEl.innerText = formatTime(audio.duration);
+            });
+
+            // Fallback caso a música carregue rápido e o evento já tenha disparado antes do listener
+            if (audio.readyState >= 1) {
+                totalDurationEl.innerText = formatTime(audio.duration);
+            }
+
+            // --- BUSCAR NA MÚSICA (SEEK) ---
+            progressBar.addEventListener("click", (e) => {
+                const rect = progressBar.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const width = rect.width;
+                const duration = audio.duration;
+                
+                if (duration) {
+                    audio.currentTime = (clickX / width) * duration;
+                }
+            });
+
+            // --- AUXILIAR: FORMATAR TEMPO (MM:SS) ---
+            function formatTime(seconds) {
+                const min = Math.floor(seconds / 60);
+                const sec = Math.floor(seconds % 60);
+                return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+            }
+
+            // --- COMPARTILHAMENTO WHATSAPP ---
+            if (btnShareWhatsapp) {
+                btnShareWhatsapp.addEventListener("click", () => {
+                    const pageUrl = window.location.href;
+                    const message = `Criei uma música personalizada exclusiva e emocionante para você! Ouça aqui a nossa melodia: ${pageUrl}`;
+                    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+                    window.open(whatsappUrl, "_blank");
+                });
+            }
+        });
+    </script>
+</body>
+</html>

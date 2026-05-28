@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amor em Canção — Músicas Personalizadas Criadas por IA</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=100&q=80">
+    <!-- CSS Estilos Premium -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Font Icons (Sutilezas Visuais) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Cabeçalho Principal -->
+    <header class="brand-header">
+        <h1>Amor em Canção</h1>
+        <p>Transforme suas memórias mais valiosas em uma melodia inesquecível</p>
+    </header>
+
+    <!-- Área Principal de Conteúdo -->
+    <main class="app-container">
+        <div class="glass-card">
+            
+            <!-- Barra de Progresso do Formulário (Visível apenas nas etapas de preenchimento 1 a 5) -->
+            <div id="wizard-progress" class="progress-bar-container">
+                <div class="progress-bar-line"></div>
+                <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                
+                <div class="progress-dot active" data-step="1">1</div>
+                <div class="progress-dot" data-step="2">2</div>
+                <div class="progress-dot" data-step="3">3</div>
+                <div class="progress-dot" data-step="4">4</div>
+                <div class="progress-dot" data-step="5">5</div>
+            </div>
+
+            <!-- FORMULÁRIO MULTI-STEP -->
+            <form id="music-request-form" onsubmit="event.preventDefault();">
+                
+                <!-- PASSO 1: Ocasião -->
+                <div class="form-step active" id="step-1">
+                    <h2 class="step-title">Qual é a ocasião especial?</h2>
+                    <p class="step-subtitle">Selecione o motivo da homenagem para darmos o tom certo à composição.</p>
+                    
+                    <div class="options-grid" id="occasion-grid">
+                        <div class="option-card" data-value="Aniversário">
+                            <span class="icon">🎂</span>
+                            <span>Aniversário</span>
+                        </div>
+                        <div class="option-card" data-value="Casamento">
+                            <span class="icon">💍</span>
+                            <span>Casamento</span>
+                        </div>
+                        <div class="option-card" data-value="Dia das Mães">
+                            <span class="icon">🌸</span>
+                            <span>Dia das Mães</span>
+                        </div>
+                        <div class="option-card" data-value="Dia dos Pais">
+                            <span class="icon">👨‍👦</span>
+                            <span>Dia dos Pais</span>
+                        </div>
+                        <div class="option-card" data-value="Pedido de namoro">
+                            <span class="icon">❤️</span>
+                            <span>Pedido de Namoro</span>
+                        </div>
+                        <div class="option-card" data-value="Homenagem">
+                            <span class="icon">✨</span>
+                            <span>Homenagem</span>
+                        </div>
+                        <div class="option-card" data-value="Amizade">
+                            <span class="icon">🤝</span>
+                            <span>Amizade</span>
+                        </div>
+                        <div class="option-card" data-value="Outra ocasião">
+                            <span class="icon">🎵</span>
+                            <span>Outra Ocasião</span>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-navigation buttons-center">
+                        <button type="button" class="btn-pink" id="btn-next-1">
+                            Continuar <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASSO 2: Nomes -->
+                <div class="form-step" id="step-2">
+                    <h2 class="step-title">Quem são os protagonistas?</h2>
+                    <p class="step-subtitle">Diga-nos os nomes de quem está oferecendo este presente e de quem vai recebê-lo.</p>
+                    
+                    <div class="inputs-group">
+                        <div class="floating-input-container">
+                            <input type="text" id="giver_name" class="floating-input" placeholder=" " required>
+                            <label class="floating-label" for="giver_name">Seu nome (Quem dá o presente)</label>
+                        </div>
+                        <div class="floating-input-container">
+                            <input type="text" id="receiver_name" class="floating-input" placeholder=" " required>
+                            <label class="floating-label" for="receiver_name">Nome do presenteado (Quem recebe)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-navigation">
+                        <button type="button" class="btn-secondary" id="btn-prev-2">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar
+                        </button>
+                        <button type="button" class="btn-pink" id="btn-next-2">
+                            Continuar <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASSO 3: História/Memórias -->
+                <div class="form-step" id="step-3">
+                    <h2 class="step-title">Compartilhe sua história</h2>
+                    <p class="step-subtitle">Escreva memórias, piadas internas, momentos marcantes ou sentimentos. A inteligência artificial usará esses detalhes para compor uma letra única.</p>
+                    
+                    <div class="textarea-container">
+                        <textarea id="story" class="textarea-story" placeholder="Ex: Nos conhecemos na faculdade em 2018. Ela ama cachorros, sempre toma café gelado e nossa primeira viagem juntos foi para Gramado, onde choveu muito, mas nos divertimos rindo no hotel..." required></textarea>
+                        <div class="story-tips">
+                            <i class="fa-solid fa-lightbulb"></i>
+                            <span><strong>Dica:</strong> Quanto mais detalhes específicos e sentimentos você colocar, mais emocionante ficará a letra da música!</span>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-navigation">
+                        <button type="button" class="btn-secondary" id="btn-prev-3">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar
+                        </button>
+                        <button type="button" class="btn-pink" id="btn-next-3">
+                            Continuar <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASSO 4: Estilo Musical -->
+                <div class="form-step" id="step-4">
+                    <h2 class="step-title">Escolha a melodia perfeita</h2>
+                    <p class="step-subtitle">Selecione o ritmo que melhor traduz os sentimentos da sua história.</p>
+                    
+                    <div class="styles-grid" id="style-grid">
+                        <div class="style-card" data-value="Sertanejo">
+                            <span class="style-icon">🤠</span>
+                            <h3>Sertanejo</h3>
+                            <p>Modão acústico e emocionante, perfeito para corações apaixonados e histórias profundas.</p>
+                        </div>
+                        <div class="style-card" data-value="MPB">
+                            <span class="style-icon">🎸</span>
+                            <h3>MPB</h3>
+                            <p>Bossa Nova suave com violão de nylon, elegante, poética e extremamente intimista.</p>
+                        </div>
+                        <div class="style-card" data-value="Pop">
+                            <span class="style-icon">✨</span>
+                            <h3>Pop</h3>
+                            <p>Produção moderna e animada, batida contagiante e refrão chiclete para celebrar a vida.</p>
+                        </div>
+                        <div class="style-card" data-value="Gospel">
+                            <span class="style-icon">🙏</span>
+                            <h3>Gospel</h3>
+                            <p>Louvor contemporâneo tocante com piano e arranjos inspiradores de fé e gratidão.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-navigation">
+                        <button type="button" class="btn-secondary" id="btn-prev-4">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar
+                        </button>
+                        <button type="button" class="btn-pink" id="btn-next-4">
+                            Continuar <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASSO 5: Pagamento -->
+                <div class="form-step" id="step-5">
+                    <h2 class="step-title">Quase lá! Finalize seu pedido</h2>
+                    <p class="step-subtitle">Sua música personalizada será gerada por IA profissional (letras GPT-4 + áudio Suno) e entregue em minutos após a confirmação.</p>
+                    
+                    <div class="payment-box">
+                        <span class="payment-badge">VALOR ÚNICO</span>
+                        <div class="price-title">R$ 97</div>
+                        <p class="price-subtitle">Sem assinaturas ou taxas ocultas. Acesso vitalício.</p>
+                        
+                        <button type="button" class="btn-pink btn-full" id="btn-checkout">
+                            <i class="fa-solid fa-credit-card"></i> Ir para Pagamento Seguro
+                        </button>
+                        
+                        <div class="payment-guarantee">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>Pagamento intermediado via Mercado Pago</span>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-navigation">
+                        <button type="button" class="btn-secondary" id="btn-prev-5">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASSO 6: Aguardando / Confirmação -->
+                <div class="form-step" id="step-6">
+                    <div class="wait-container">
+                        <!-- Vinil Giratório -->
+                        <div class="vinyl-wrapper">
+                            <div class="vinyl-disc" id="vinyl-disc">
+                                <div class="vinyl-label">
+                                    <i class="fa-solid fa-music"></i>
+                                </div>
+                            </div>
+                            <img src="https://images.unsplash.com/photo-1619983081563-430f63602796?w=100&q=80" style="display:none;" alt="needle" class="vinyl-needle" id="vinyl-needle">
+                        </div>
+                        
+                        <h2 class="step-title" id="loader-title">Criando sua obra de arte...</h2>
+                        
+                        <div class="progress-loader">
+                            <div class="progress-loader-fill" id="loader-bar-fill"></div>
+                        </div>
+                        
+                        <p class="loader-status-text" id="loader-status-text">Confirmando pagamento...</p>
+                        <p class="loader-subtitle">Isso pode levar de 1 a 2 minutos. Não feche esta janela!</p>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </main>
+
+    <!-- Rodapé -->
+    <footer>
+        <p>&copy; 2026 Amor em Canção. Todos os direitos reservados. Feito com amor em português.</p>
+    </footer>
+
+    <!-- Lógica de Controle JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
