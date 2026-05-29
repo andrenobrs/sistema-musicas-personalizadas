@@ -164,18 +164,25 @@
                             <i class="fa-solid fa-arrow-left"></i> Voltar
                         </button>
                         <button type="button" class="btn-pink" id="btn-next-4">
-                            Continuar <i class="fa-solid fa-arrow-                <!-- PASSO 5: Prévia da Música (Capped 30 segundos) -->
+                            Continuar <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PASSO 5: Prévia da Música (Capped 30 segundos) -->
                 <div class="form-step" id="step-5">
                     
-                    <!-- Estado A: Carregando/Gerando -->
-                    <div class="wait-container text-center" id="preview-loading">
-                        <div class="vinyl-wrapper">
-                            <div class="vinyl-disc" id="preview-vinyl-disc" style="animation-play-state: running;">
-                                <div class="vinyl-label">
-                                    <i class="fa-solid fa-music"></i>
-                                </div>
+                    <!-- Disco de Vinil Girando (Centralizado) - Sempre visível no Passo 5 -->
+                    <div class="vinyl-wrapper" style="margin-bottom: 2rem;">
+                        <div class="vinyl-disc" id="preview-vinyl-disc" style="animation-play-state: running;">
+                            <div class="vinyl-label">
+                                <i class="fa-solid fa-music"></i>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Estado A: Carregando/Gerando -->
+                    <div class="wait-container text-center" id="preview-loading" style="padding-top: 0.5rem;">
                         <h2 class="step-title" id="preview-loader-title">Preparando sua prévia...</h2>
                         <div class="progress-loader">
                             <div class="progress-loader-fill" id="preview-loader-bar-fill" style="width: 5%;"></div>
@@ -185,8 +192,8 @@
                     </div>
 
                     <!-- Estado B: Prévia Pronta -->
-                    <div class="text-center" id="preview-ready" style="display: none;">
-                        <h2 class="step-title" style="font-size: 2.3rem; margin-bottom: 0.5rem;">Ouça sua prévia exclusiva!</h2>
+                    <div class="text-center" id="preview-ready" style="display: none; padding-top: 0.5rem;">
+                        <h2 class="step-title" style="font-size: 2rem; margin-bottom: 0.5rem;">Ouça sua prévia exclusiva!</h2>
                         <p class="step-subtitle" style="margin-bottom: 2rem;">Gostou? Adquira a versão completa.</p>
                         
                         <!-- Player Customizado de Prévia -->

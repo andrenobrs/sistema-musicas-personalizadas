@@ -135,6 +135,12 @@ document.addEventListener("DOMContentLoaded", () => {
         previewLoading.style.display = "block";
         previewReady.style.display = "none";
         
+        // Garante que o vinil comece girando no loading
+        const vinylDisc = document.getElementById("preview-vinyl-disc");
+        if (vinylDisc) {
+            vinylDisc.style.animationPlayState = "running";
+        }
+        
         const payload = {
             occasion: selectedOccasion,
             receiver_name: document.getElementById("receiver_name").value.trim(),
@@ -259,11 +265,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const currentTimeEl = document.getElementById("preview-current-time");
         const capNotice = document.getElementById("preview-cap-notice");
         const progressBar = document.getElementById("preview-audio-progress-bar");
+        const vinylDisc = document.getElementById("preview-vinyl-disc");
         
         capNotice.style.display = "none";
         progressFill.style.width = "0%";
         currentTimeEl.innerText = "00:00";
         playIcon.className = "fa-solid fa-play";
+        
+        if (vinylDisc) {
+            vinylDisc.style.animationPlayState = "paused";
+        }
 
         // Bind Play/Pause
         playBtn.onclick = () => {
@@ -281,10 +292,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         previewAudio.onplay = () => {
             playIcon.className = "fa-solid fa-pause";
+            if (vinylDisc) {
+                vinylDisc.style.animationPlayState = "running";
+            }
         };
 
         previewAudio.onpause = () => {
             playIcon.className = "fa-solid fa-play";
+            if (vinylDisc) {
+                vinylDisc.style.animationPlayState = "paused";
+            }
         };
 
         // Time update capping at 30 seconds
@@ -296,6 +313,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 previewAudio.pause();
                 previewAudio.currentTime = 30;
                 playIcon.className = "fa-solid fa-play";
+                if (vinylDisc) {
+                    vinylDisc.style.animationPlayState = "paused";
+                }
                 capNotice.style.display = "block";
                 progressFill.style.width = "100%";
                 currentTimeEl.innerText = "00:30";
