@@ -103,6 +103,14 @@ document.addEventListener("DOMContentLoaded", () => {
         goToStep(6);
     });
 
+    document.getElementById("btn-edit-story").addEventListener("click", () => {
+        // Pausa áudio se estiver tocando
+        if (previewAudio) {
+            previewAudio.pause();
+        }
+        goToStep(3);
+    });
+
     // --- PASSO 6: PAGAMENTO (AÇÕES) ---
     document.getElementById("btn-back-to-preview").addEventListener("click", () => {
         goToStep(5);
@@ -318,6 +326,16 @@ document.addEventListener("DOMContentLoaded", () => {
         // Ativa o passo solicitado
         steps[step].classList.add("active");
         currentStep = step;
+        
+        // Adiciona ou remove classe rosa do card principal
+        const mainCard = document.getElementById("main-glass-card");
+        if (mainCard) {
+            if (step === 5 || step === 7) {
+                mainCard.classList.add("card-pink");
+            } else {
+                mainCard.classList.remove("card-pink");
+            }
+        }
         
         // Atualiza a barra de progresso (somente se for passos de preenchimento 1 a 6)
         if (step <= totalSteps) {
