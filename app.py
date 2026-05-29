@@ -1,9 +1,15 @@
 import os
 import threading
 import time
+import builtins
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from dotenv import load_dotenv
+
+# Forçar flushing imediato de logs (unbuffered stdout)
+def print(*args, **kwargs):
+    kwargs.setdefault('flush', True)
+    builtins.print(*args, **kwargs)
 
 # Carrega chaves do .env
 load_dotenv()
@@ -284,6 +290,68 @@ def mercadopago_webhook():
     except Exception as e:
         print(f"Error in Mercado Pago webhook: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route("/api/debug", methods=["GET"])
+def api_debug():
+    """Endpoint de diagnóstico das configurações e do status de geração."""
+    load_dotenv() # Força releitura fresca do .env
+    
+    # 1. Verifica chaves de API
+    keys_status = {
+        "KIE_AI_API_KEY_configured": "sim" if os.getenv("KIE_AI_API_KEY") else "não",
+        "OPENAI_API_KEY_configured": "sim" if os.getenv("OPENAI_API_KEY") else "não",
+        "SUPABASE_URL_configured": "sim" if os.getenv("SUPABASE_URL") else "não",
+        "SUPABASE_KEY_configured": "sim" if os.getenv("SUPABASE_KEY") else "não",
+        "MERCADO_AGO_ACCESS_TOKEN_configured": "sim" if os.getenv("MERCADO_AGO_ACCESS_TOKEN") else "não",
+    }
+    
+    # 2. Verifica o status da última geração
+    last_order = None
+    try:
+        import sqlite3
+        conn = sqlite3.connect(db.DB_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM orders ORDER BY created_at DESC LIMIT 1")
+        row = cursor.fetchone()
+        if row:
+            last_order = dict(row)
+        conn.close()
+    except Exception as db_err:
+        print(f"Error querying last order: {db_err}")
+        # Tenta fallback pelo Supabase se habilitado
+        try:
+            if db.USE_SUPABASE and db.supabase_client:
+                res = db.supabase_client.table("orders").select("*").order("created_at", desc=True).limit(1).execute()
+                if res.data:
+                    last_order = res.data[0]
+        except Exception as sb_err:
+            print(f"Error querying last order from Supabase: {sb_err}")
+            
+    generation_status = {
+        "found": "não"
+    }
+    if last_order:
+        generation_status = {
+            "found": "sim",
+            "order_id": last_order.get("id"),
+            "occasion": last_order.get("occasion"),
+            "receiver_name": last_order.get("receiver_name"),
+            "style": last_order.get("style"),
+            "status": last_order.get("status"),
+            "payment_status": last_order.get("payment_status"),
+            "has_lyrics": "sim" if last_order.get("lyrics") else "não",
+            "lyrics_preview": last_order.get("lyrics")[:150] + "..." if last_order.get("lyrics") else None,
+            "audio_url": last_order.get("audio_url"),
+            "image_url": last_order.get("image_url"),
+            "suno_task_id": last_order.get("suno_task_id"),
+            "created_at": last_order.get("created_at")
+        }
+        
+    return jsonify({
+        "keys_status": keys_status,
+        "last_generation": generation_status
+    }), 200
 
 if __name__ == "__main__":
     print("Iniciando o servidor de Músicas Personalizadas na porta 5000...")

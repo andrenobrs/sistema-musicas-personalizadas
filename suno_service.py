@@ -1,7 +1,13 @@
 import os
 import time
 import requests
+import builtins
 from dotenv import load_dotenv
+
+# Forçar flushing imediato de logs (unbuffered stdout)
+def print(*args, **kwargs):
+    kwargs.setdefault('flush', True)
+    builtins.print(*args, **kwargs)
 
 load_dotenv()
 
@@ -38,17 +44,15 @@ _mock_tasks = {}
 
 def trigger_suno_generation(prompt, style, title):
     """Dispara a geração de música na API do Suno via Kie.ai."""
-    if not KIE_AI_API_KEY:
-        print("Kie.ai API key missing. Registering simulated Suno task.")
-        return trigger_mock_generation(style)
-        
-    url = f"{KIE_AI_BASE_URL}/api/v1/generate"
-    headers = {
-        "Authorization": f"Bearer {KIE_AI_API_KEY}",
-        "Content-Type": "application/json"
-    }
+    print("\n" + "="*80)
+    print(" [DIAGNÓSTICO SUNO] INICIANDO GERAÇÃO DE MÚSICA ")
+    print("="*80)
     
-    # Mapeamento do estilo em português para as tags solicitadas do Suno
+    # 1. Verifica se a chave KIE_AI_API_KEY está sendo lida corretamente
+    print(f" -> KIE_AI_API_KEY configurada no .env? {'SIM (possui valor)' if KIE_AI_API_KEY else 'NÃO (está vazia/nula)'}")
+    print(f" -> Valor parcial da KIE_AI_API_KEY: {KIE_AI_API_KEY[:8] + '...' if KIE_AI_API_KEY else 'Nenhum'}")
+    
+    # 2. Exibe o estilo musical recebido e o mapeamento enviado
     style_mapping = {
         "Sertanejo": "sertanejo universitario romantico",
         "MPB": "mpb romantica brasileira",
@@ -56,6 +60,23 @@ def trigger_suno_generation(prompt, style, title):
         "Gospel": "gospel leve romantico"
     }
     suno_style = style_mapping.get(style, style)
+    print(f" -> Estilo original solicitado: {repr(style)}")
+    print(f" -> Estilo mapeado e enviado para Suno: {repr(suno_style)}")
+    print(f" -> Título da faixa: {repr(title)}")
+    
+    # 3. Exibe a letra enviada para o Suno
+    print(f" -> Letra da música enviada para o Suno:\n{'-'*40}\n{prompt}\n{'-'*40}")
+    
+    # 4. FORÇAR USO DA API REAL (Não usar o mock silencioso!)
+    # Se a chave estiver ausente, avisamos que dará erro 401 mas tentamos assim mesmo para demonstrar a falha real da API.
+    if not KIE_AI_API_KEY:
+        print(" [WARNING] KIE_AI_API_KEY não foi encontrada! O sistema vai tentar bater na API real do Kie.ai para expor o erro real de autenticação no console.")
+
+    url = f"{KIE_AI_BASE_URL}/api/v1/generate"
+    headers = {
+        "Authorization": f"Bearer {KIE_AI_API_KEY or ''}",
+        "Content-Type": "application/json"
+    }
     
     payload = {
         "prompt": prompt,
@@ -67,54 +88,73 @@ def trigger_suno_generation(prompt, style, title):
     }
     
     try:
+        print(f" -> Realizando chamada HTTP POST para: {url}")
         response = requests.post(url, headers=headers, json=payload, timeout=30)
+        print(f" -> Status Code HTTP retornado: {response.status_code}")
+        
         response_json = response.json()
+        
+        # 5. Mostra a resposta completa da API do Kie.ai
+        print(f" -> Resposta COMPLETA da API Kie.ai:\n{response_json}\n")
         
         if response.status_code == 200 and response_json.get("code") == 200:
             data = response_json.get("data", {})
             task_id = data.get("taskId")
             if task_id:
-                print(f"Suno task created successfully: {task_id}")
+                # 6. Mostra o taskId retornado
+                print(f" [SUCCESS] taskId retornado com sucesso: {task_id}")
+                print("="*80 + "\n")
                 return {"task_id": task_id, "simulated": False}
                 
-        print(f"Kie.ai returned error code: {response_json}. Falling back to simulation.")
-        return trigger_mock_generation(style)
+        err_msg = f"Kie.ai retornou código de erro na resposta: {response_json}"
+        print(f" [ERROR] {err_msg}")
+        print("="*80 + "\n")
+        raise Exception(err_msg)
+        
     except Exception as e:
-        print(f"Kie.ai API exception: {e}. Falling back to simulation.")
-        return trigger_mock_generation(style)
+        print(f" [EXCEPTION] Falha durante chamada da API real do Kie.ai: {e}")
+        print("="*80 + "\n")
+        raise Exception(f"Kie.ai API Error: {e}")
 
 def get_suno_status(task_id):
     """Consulta o status da geração de áudio no Kie.ai."""
-    # Se for uma tarefa simulada
+    print("\n" + "="*80)
+    print(f" [DIAGNÓSTICO SUNO] VERIFICANDO STATUS DO POLLING (taskId: {task_id}) ")
+    print("="*80)
+    
+    # Suporte legado caso venha um ID mockado antigo, mas avisa
     if task_id.startswith("mock_suno_"):
-        return get_mock_status(task_id)
+        print(" -> Task ID mockado detectado. Executando simulação de status...")
+        res = get_mock_status(task_id)
+        print(f" -> Resultado da simulação: {res}")
+        print("="*80 + "\n")
+        return res
         
     url = f"{KIE_AI_BASE_URL}/api/v1/jobs/recordInfo?taskId={task_id}"
     headers = {
-        "Authorization": f"Bearer {KIE_AI_API_KEY}"
+        "Authorization": f"Bearer {KIE_AI_API_KEY or ''}"
     }
     
     try:
+        print(f" -> Realizando chamada HTTP GET para: {url}")
         response = requests.get(url, headers=headers, timeout=15)
+        print(f" -> Status Code HTTP retornado: {response.status_code}")
+        
         response_json = response.json()
+        
+        # Mostra o status de cada polling completo
+        print(f" -> Resposta COMPLETA do Polling:\n{response_json}\n")
         
         if response.status_code == 200 and response_json.get("code") == 200:
             job_data = response_json.get("data", {})
             status = job_data.get("status", "").lower()
+            print(f" -> Status retornado pelo job: {repr(status)}")
             
-            # Mapeamento de status da Kie.ai para o padrão interno do nosso app
-            # Estados comuns: 'waiting', 'queuing', 'generating', 'success', 'fail'
             if status in ["success"]:
-                # Faz a extração resiliente da URL do áudio, vídeo e imagem
                 result = job_data.get("result", {})
-                
-                # Formato 1: result.data[0].audio_url
-                # Formato 2: result.audio_url
-                # Formato 3: job_data.data[0].audio_url (caso retorne direto em data)
                 audio_url = None
                 image_url = None
                 
-                # Caso result seja um dict
                 if isinstance(result, dict):
                     result_data = result.get("data", [])
                     if result_data and isinstance(result_data, list):
@@ -124,7 +164,6 @@ def get_suno_status(task_id):
                         audio_url = result.get("audio_url")
                         image_url = result.get("image_url")
                         
-                # Caso não tenha encontrado, tenta em job_data direto
                 if not audio_url:
                     inner_data = job_data.get("data")
                     if inner_data and isinstance(inner_data, list):
@@ -132,12 +171,18 @@ def get_suno_status(task_id):
                         image_url = inner_data[0].get("image_url")
                         
                 if not image_url:
-                    # Tenta imagens em result
                     images = result.get("images", []) if isinstance(result, dict) else []
                     if images:
                         image_url = images[0]
                         
+                # Mostra a URL do áudio final retornado
+                print(f" -> URL de áudio extraída: {repr(audio_url)}")
+                print(f" -> URL de imagem extraída: {repr(image_url)}")
+                
                 if audio_url:
+                    print(f" [SUCCESS] Áudio final gerado com sucesso!")
+                    print(f" -> URL final de áudio: {audio_url}")
+                    print("="*80 + "\n")
                     return {
                         "status": "completed",
                         "audio_url": audio_url,
@@ -145,23 +190,35 @@ def get_suno_status(task_id):
                         "image_url": image_url or "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80"
                     }
                 else:
-                    # Encontrou status de sucesso mas não achou os arquivos de áudio ainda
-                    return {"status": "generating"}
+                    print(" -> O status do job está com sucesso, mas a URL do áudio ainda não está pronta na resposta.")
+                    print("="*80 + "\n")
+                    return {"status": "generating_audio"}
                     
             elif status in ["fail", "error"]:
-                return {"status": "failed", "error": job_data.get("failMsg", "Erro desconhecido na API do Suno")}
+                err_msg = job_data.get("failMsg", "Erro desconhecido informado pela API do Suno")
+                print(f" [ERROR] Geração falhou na API do Suno: {err_msg}")
+                print("="*80 + "\n")
+                return {"status": "failed", "error": err_msg}
                 
             elif status in ["generating"]:
+                print(" -> A música está sendo gerada ativamente...")
+                print("="*80 + "\n")
                 return {"status": "generating_audio"}
                 
             else:
-                return {"status": "generating_audio"}  # Qualquer estado intermediário (waiting, queuing) trata como gerando
+                print(f" -> O status atual é {repr(status)} (tratando como gerando_áudio)...")
+                print("="*80 + "\n")
+                return {"status": "generating_audio"}
                 
-        print(f"Kie.ai status check returned failure: {response_json}")
-        return {"status": "generating_audio"}
+        err_msg = f"Falha na resposta do polling do Kie.ai: {response_json}"
+        print(f" [ERROR] {err_msg}")
+        print("="*80 + "\n")
+        return {"status": "failed", "error": err_msg}
+        
     except Exception as e:
-        print(f"Exception during Kie.ai status check: {e}")
-        return {"status": "generating_audio"}
+        print(f" [EXCEPTION] Falha durante polling na API do Kie.ai: {e}")
+        print("="*80 + "\n")
+        return {"status": "failed", "error": str(e)}
 
 # --- FUNÇÕES AUXILIARES PARA SIMULAÇÃO ---
 
