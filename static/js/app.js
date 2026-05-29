@@ -233,6 +233,18 @@ document.addEventListener("DOMContentLoaded", () => {
         
         previewAudio = new Audio(orderData.audio_url);
         
+        const toPaymentBtn = document.getElementById("btn-to-payment");
+        toPaymentBtn.style.display = "none"; // Garante oculto inicialmente
+        
+        // Exibe o botão de compra apenas quando o áudio estiver completamente carregado
+        previewAudio.oncanplaythrough = () => {
+            toPaymentBtn.style.display = "flex";
+        };
+        
+        if (previewAudio.readyState >= 3) {
+            toPaymentBtn.style.display = "flex";
+        }
+        
         const playBtn = document.getElementById("preview-play-pause-btn");
         const playIcon = document.getElementById("preview-play-icon");
         const progressFill = document.getElementById("preview-audio-progress-fill");
