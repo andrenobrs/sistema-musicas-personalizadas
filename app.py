@@ -135,6 +135,13 @@ def create_order():
     # Salva o pedido inicial no banco de dados
     order = db.create_order(occasion, giver_name, receiver_name, story, style)
     
+    # Inicia a geração da melodia e letra IMEDIATAMENTE em segundo plano (para a prévia de 30 segundos)
+    threading.Thread(
+        target=process_music_generation_background,
+        args=(order["id"],),
+        daemon=True
+    ).start()
+    
     checkout_url = f"/checkout-mp/{order['id']}" # Link interno para simulação/checkout real
     
     # Se houver credenciais reais do Mercado Pago configuradas, podemos gerar uma preferência real
@@ -194,22 +201,14 @@ def pay_simulate(order_id):
     if order["payment_status"] == "approved":
         return jsonify({"success": True, "message": "Pagamento já aprovado.", "order": order})
         
-    # Atualiza status para pago e gerando
+    # Atualiza status para pago
     updated_order = db.update_order(order_id, {
-        "payment_status": "approved",
-        "status": "generating_lyrics"
+        "payment_status": "approved"
     })
-    
-    # Inicia a geração da música em segundo plano
-    threading.Thread(
-        target=process_music_generation_background,
-        args=(order_id,),
-        daemon=True
-    ).start()
     
     return jsonify({
         "success": True,
-        "message": "Pagamento simulado com sucesso! Iniciando composição da música.",
+        "message": "Pagamento simulado com sucesso!",
         "order": updated_order
     })
 
@@ -226,6 +225,7 @@ def get_order_status(order_id):
         "payment_status": order["payment_status"],
         "audio_url": order["audio_url"],
         "image_url": order["image_url"],
+        "lyrics": order["lyrics"],
         "expires_at": order["expires_at"]
     })
 
@@ -235,6 +235,10 @@ def delivery(order_id):
     order = db.get_order(order_id)
     if not order:
         return "Pedido não encontrado", 404
+        
+    # Enforça que o pedido deve estar pago para liberar a música inteira
+    if order["payment_status"] != "approved":
+        return redirect(f"/?order_id={order_id}&step=6")
         
     # Verifica se expirou (30 dias)
     expires_at = datetime.fromisoformat(order["expires_at"])
@@ -270,16 +274,10 @@ def mercadopago_webhook():
                 if status == "approved" and order_id:
                     order = db.get_order(order_id)
                     if order and order["payment_status"] != "approved":
-                        # Aprova o pagamento e inicia geração
+                        # Apenas marca o pagamento como aprovado (a música já foi/está sendo gerada)
                         db.update_order(order_id, {
-                            "payment_status": "approved",
-                            "status": "generating_lyrics"
+                            "payment_status": "approved"
                         })
-                        threading.Thread(
-                            target=process_music_generation_background,
-                            args=(order_id,),
-                            daemon=True
-                        ).start()
                         print(f"Payment approved via webhook for order {order_id}!")
                         
         return jsonify({"status": "ok"}), 200

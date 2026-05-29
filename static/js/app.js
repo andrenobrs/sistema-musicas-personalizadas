@@ -1,16 +1,20 @@
 /* =========================================================================
-   LÓGICA JAVASCRIPT DO FORMULÁRIO (WIZARD & STATUS POLLING)
+   LÓGICA JAVASCRIPT DO FORMULÁRIO (WIZARD, PREVIEW & POLLING)
    ========================================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
     // Estado do Wizard
     let currentStep = 1;
-    const totalSteps = 5;
+    const totalSteps = 6; // 1: Ocasião, 2: Nomes, 3: História, 4: Estilo, 5: Prévia, 6: Pagamento
     
     // Dados selecionados
     let selectedOccasion = "";
     let selectedStyle = "";
     let orderId = "";
+    let checkoutUrl = "";
+    
+    // Player de Prévia Global
+    let previewAudio = null;
 
     // Elementos DOM
     const steps = {
@@ -19,7 +23,8 @@ document.addEventListener("DOMContentLoaded", () => {
         3: document.getElementById("step-3"),
         4: document.getElementById("step-4"),
         5: document.getElementById("step-5"),
-        6: document.getElementById("step-6")
+        6: document.getElementById("step-6"),
+        7: document.getElementById("step-7")
     };
     
     const progressDots = document.querySelectorAll(".progress-dot");
@@ -84,15 +89,44 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Por favor, selecione um estilo musical para continuar.");
             return;
         }
+        
+        // Vai para a Prévia (Passo 5) e inicia a geração em segundo plano imediatamente!
+        goToStep(5);
+        startPreviewGeneration();
+    });
+
+    // --- PASSO 5: PRÉVIA (AÇÕES) ---
+    document.getElementById("btn-to-payment").addEventListener("click", () => {
+        // Pausa áudio se estiver tocando
+        if (previewAudio) {
+            previewAudio.pause();
+        }
+        goToStep(6);
+    });
+
+    // --- PASSO 6: PAGAMENTO (AÇÕES) ---
+    document.getElementById("btn-back-to-preview").addEventListener("click", () => {
         goToStep(5);
     });
 
-    // --- PASSO 5: CHECKOUT / PEDIDO ---
-    document.getElementById("btn-prev-5").addEventListener("click", () => goToStep(4));
-    document.getElementById("btn-checkout").addEventListener("click", async () => {
-        const checkoutBtn = document.getElementById("btn-checkout");
-        checkoutBtn.disabled = true;
-        checkoutBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Criando seu pedido...';
+    document.getElementById("btn-checkout").addEventListener("click", () => {
+        if (checkoutUrl) {
+            window.location.href = checkoutUrl;
+        } else {
+            alert("Erro ao direcionar para o pagamento. Por favor, reinicie o formulário.");
+        }
+    });
+
+    // --- GERAÇÃO DA PRÉVIA AUTOMÁTICA ---
+    async function startPreviewGeneration() {
+        const previewLoading = document.getElementById("preview-loading");
+        const previewReady = document.getElementById("preview-ready");
+        const previewStatusText = document.getElementById("preview-loader-status-text");
+        const previewBarFill = document.getElementById("preview-loader-bar-fill");
+        
+        // Inicializa estado visual
+        previewLoading.style.display = "block";
+        previewReady.style.display = "none";
         
         const payload = {
             occasion: selectedOccasion,
@@ -103,6 +137,9 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         
         try {
+            previewStatusText.innerText = "Preparando algo especial para você...";
+            previewBarFill.style.width = "10%";
+            
             const response = await fetch("/api/order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -111,20 +148,159 @@ document.addEventListener("DOMContentLoaded", () => {
             const result = await response.json();
             
             if (result.success) {
-                // Redireciona para o checkout (simulado ou do Mercado Pago)
-                window.location.href = result.checkout_url;
+                orderId = result.order.id;
+                checkoutUrl = result.checkout_url;
+                
+                // Começa o polling do status da música em segundo plano
+                pollPreviewStatus(orderId);
             } else {
-                alert("Erro ao criar pedido: " + result.error);
-                checkoutBtn.disabled = false;
-                checkoutBtn.innerHTML = '<i class="fa-solid fa-credit-card"></i> Ir para Pagamento Seguro';
+                previewStatusText.innerText = "Erro ao iniciar composição. Clique em voltar.";
+                previewStatusText.style.color = "red";
             }
         } catch (err) {
             console.error(err);
-            alert("Erro na conexão com o servidor.");
-            checkoutBtn.disabled = false;
-            checkoutBtn.innerHTML = '<i class="fa-solid fa-credit-card"></i> Ir para Pagamento Seguro';
+            previewStatusText.innerText = "Erro de conexão com o servidor.";
+            previewStatusText.style.color = "red";
         }
-    });
+    }
+
+    // --- POLLING DE STATUS DA PRÉVIA ---
+    function pollPreviewStatus(id) {
+        const previewBarFill = document.getElementById("preview-loader-bar-fill");
+        const previewStatusText = document.getElementById("preview-loader-status-text");
+        
+        let progress = 10;
+        
+        const intervalId = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/order/${id}`);
+                const result = await response.json();
+                
+                if (!result.success) {
+                    clearInterval(intervalId);
+                    previewStatusText.innerText = "Erro ao compor música.";
+                    previewStatusText.style.color = "red";
+                    return;
+                }
+                
+                const status = result.status;
+                
+                if (status === "generating_lyrics") {
+                    previewStatusText.innerText = "Escrevendo cada verso com carinho...";
+                    progress = Math.min(progress + 3, 45);
+                    previewBarFill.style.width = `${progress}%`;
+                } 
+                else if (status === "generating_audio") {
+                    progress = Math.min(progress + 2, 90);
+                    previewBarFill.style.width = `${progress}%`;
+                    
+                    if (progress < 68) {
+                        previewStatusText.innerText = "Afinando os instrumentos...";
+                    } else {
+                        previewStatusText.innerText = "Sua música está tomando forma...";
+                    }
+                } 
+                else if (status === "completed") {
+                    clearInterval(intervalId);
+                    previewStatusText.innerText = "Últimos retoques na sua obra de arte...";
+                    previewBarFill.style.width = "100%";
+                    
+                    setTimeout(() => {
+                        // Exibe a prévia
+                        showPreviewReady(result);
+                    }, 1000);
+                } 
+                else if (status === "failed") {
+                    clearInterval(intervalId);
+                    previewStatusText.innerText = "Falha ao gerar a melodia. Por favor, tente novamente.";
+                    previewStatusText.style.color = "red";
+                }
+            } catch (err) {
+                console.error("Error polling preview status:", err);
+            }
+        }, 3000);
+    }
+
+    // --- MONTAGEM DO PLAYER DE PRÉVIA CAPPED A 30s ---
+    function showPreviewReady(orderData) {
+        document.getElementById("preview-loading").style.display = "none";
+        document.getElementById("preview-ready").style.display = "block";
+        
+        // Carrega as letras
+        const lyricsContent = document.getElementById("preview-lyrics-content");
+        lyricsContent.innerText = orderData.lyrics || "Homenagem em melodia...";
+
+        // Cria elemento de áudio
+        if (previewAudio) {
+            previewAudio.pause();
+        }
+        
+        previewAudio = new Audio(orderData.audio_url);
+        
+        const playBtn = document.getElementById("preview-play-pause-btn");
+        const playIcon = document.getElementById("preview-play-icon");
+        const progressFill = document.getElementById("preview-audio-progress-fill");
+        const currentTimeEl = document.getElementById("preview-current-time");
+        const capNotice = document.getElementById("preview-cap-notice");
+        const progressBar = document.getElementById("preview-audio-progress-bar");
+        
+        capNotice.style.display = "none";
+        progressFill.style.width = "0%";
+        currentTimeEl.innerText = "00:00";
+        playIcon.className = "fa-solid fa-play";
+
+        // Bind Play/Pause
+        playBtn.onclick = () => {
+            if (previewAudio.paused) {
+                // Se já estiver no limite dos 30 segundos e tentar tocar de novo
+                if (previewAudio.currentTime >= 30) {
+                    previewAudio.currentTime = 0;
+                    capNotice.style.display = "none";
+                }
+                previewAudio.play();
+            } else {
+                previewAudio.pause();
+            }
+        };
+
+        previewAudio.onplay = () => {
+            playIcon.className = "fa-solid fa-pause";
+        };
+
+        previewAudio.onpause = () => {
+            playIcon.className = "fa-solid fa-play";
+        };
+
+        // Time update capping at 30 seconds
+        previewAudio.ontimeupdate = () => {
+            const current = previewAudio.currentTime;
+            
+            // Limitador de 30 segundos (Prévia)
+            if (current >= 30) {
+                previewAudio.pause();
+                previewAudio.currentTime = 30;
+                playIcon.className = "fa-solid fa-play";
+                capNotice.style.display = "block";
+                progressFill.style.width = "100%";
+                currentTimeEl.innerText = "00:30";
+            } else {
+                const percentage = (current / 30) * 100;
+                progressFill.style.width = `${percentage}%`;
+                currentTimeEl.innerText = `00:${Math.floor(current).toString().padStart(2, '0')}`;
+            }
+        };
+
+        // Permite seek apenas dentro dos 30 segundos
+        progressBar.onclick = (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            const targetTime = (clickX / width) * 30;
+            
+            previewAudio.currentTime = targetTime;
+            capNotice.style.display = "none";
+        };
+    }
 
     // --- CONTROLE DE NAVEGAÇÃO DO WIZARD ---
     function goToStep(step) {
@@ -135,7 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
         steps[step].classList.add("active");
         currentStep = step;
         
-        // Atualiza a barra de progresso (somente se for passos 1 a 5)
+        // Atualiza a barra de progresso (somente se for passos de preenchimento 1 a 6)
         if (step <= totalSteps) {
             wizardProgress.style.display = "flex";
             updateProgressIndicators(step);
@@ -145,11 +321,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateProgressIndicators(activeStep) {
-        // Atualiza a linha preenchida
         const fillPercentage = ((activeStep - 1) / (totalSteps - 1)) * 100;
         progressBarFill.style.width = `${fillPercentage}%`;
         
-        // Atualiza os círculos numéricos
         progressDots.forEach(dot => {
             const stepNum = parseInt(dot.getAttribute("data-step"));
             dot.classList.remove("active", "completed");
@@ -162,83 +336,43 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // --- VERIFICA SE JÁ VOLTOU DO CHECKOUT SIMULADO ---
+    // --- VERIFICA SE JÁ VOLTOU DO CHECKOUT SIMULADO (LIBERAÇÃO) ---
     const urlParams = new URLSearchParams(window.location.search);
     const paramOrderId = urlParams.get("order_id");
     const paramStep = urlParams.get("step");
     
-    if (paramOrderId && paramStep === "6") {
+    if (paramOrderId && paramStep === "7") {
         orderId = paramOrderId;
-        goToStep(6);
-        startPollingStatus(paramOrderId);
+        goToStep(7);
+        startPollingLiberacao(paramOrderId);
     }
 
-    // --- POLLING DE STATUS (PASSO 6: TELA DE AGUARDO) ---
-    function startPollingStatus(id) {
-        const loaderBarFill = document.getElementById("loader-bar-fill");
-        const statusText = document.getElementById("loader-status-text");
-        const vinylDisc = document.getElementById("vinyl-disc");
+    // --- POLLING APÓS PAGAMENTO (LIBERAÇÃO IMEDIATA) ---
+    function startPollingLiberacao(id) {
+        const loaderStatus = document.getElementById("loader-status-text");
         
-        // Força animação ativa do vinil
-        vinylDisc.style.animationPlayState = "running";
-        
-        let progress = 5;
-        loaderBarFill.style.width = `${progress}%`;
-        
+        let attempts = 0;
         const intervalId = setInterval(async () => {
+            attempts++;
             try {
                 const response = await fetch(`/api/order/${id}`);
                 const result = await response.json();
                 
-                if (!result.success) {
+                if (result.success && result.payment_status === "approved") {
                     clearInterval(intervalId);
-                    statusText.innerText = "Erro ao buscar status do pedido.";
-                    statusText.style.color = "red";
-                    vinylDisc.style.animationPlayState = "paused";
-                    return;
-                }
-                
-                const status = result.status;
-                const paymentStatus = result.payment_status;
-                
-                if (paymentStatus === "pending") {
-                    statusText.innerText = "Preparando algo especial para você...";
-                    progress = Math.min(progress + 2, 18);
-                    loaderBarFill.style.width = `${progress}%`;
-                } 
-                else if (status === "generating_lyrics") {
-                    statusText.innerText = "Escrevendo cada verso com carinho...";
-                    progress = Math.min(progress + 3, 45);
-                    loaderBarFill.style.width = `${progress}%`;
-                } 
-                else if (status === "generating_audio") {
-                    progress = Math.min(progress + 2, 90);
-                    loaderBarFill.style.width = `${progress}%`;
-                    
-                    if (progress < 68) {
-                        statusText.innerText = "Afinando os instrumentos...";
-                    } else {
-                        statusText.innerText = "Sua música está tomando forma...";
-                    }
-                } 
-                else if (status === "completed") {
-                    clearInterval(intervalId);
-                    statusText.innerText = "Últimos retoques na sua obra de arte...";
-                    loaderBarFill.style.width = "100%";
+                    loaderStatus.innerText = "Obra de arte liberada! Redirecionando...";
                     
                     setTimeout(() => {
                         window.location.href = `/musica/${id}`;
                     }, 1200);
-                } 
-                else if (status === "failed") {
+                } else if (attempts > 5) {
+                    // Força liberação se por acaso o webhook atrasar em simulação
                     clearInterval(intervalId);
-                    statusText.innerText = "Erro durante a composição. Contate o suporte.";
-                    statusText.style.color = "red";
-                    vinylDisc.style.animationPlayState = "paused";
+                    window.location.href = `/musica/${id}`;
                 }
             } catch (err) {
-                console.error("Error polling order status:", err);
+                console.error("Error polling payment release:", err);
             }
-        }, 3000); // Polling a cada 3 segundos para fluidez visual e resposta rápida
+        }, 1500);
     }
 });

@@ -33,6 +33,7 @@
                 <div class="progress-dot" data-step="3">3</div>
                 <div class="progress-dot" data-step="4">4</div>
                 <div class="progress-dot" data-step="5">5</div>
+                <div class="progress-dot" data-step="6">6</div>
             </div>
 
             <!-- FORMULÁRIO MULTI-STEP -->
@@ -167,20 +168,75 @@
                             <i class="fa-solid fa-arrow-left"></i> Voltar
                         </button>
                         <button type="button" class="btn-pink" id="btn-next-4">
-                            Continuar <i class="fa-solid fa-arrow-right"></i>
-                        </button>
+                            Continuar <i class="fa-solid fa-arrow-                <!-- PASSO 5: Prévia da Música (Capped 30 segundos) -->
+                <div class="form-step" id="step-5">
+                    
+                    <!-- Estado A: Carregando/Gerando -->
+                    <div class="wait-container text-center" id="preview-loading">
+                        <div class="vinyl-wrapper">
+                            <div class="vinyl-disc" id="preview-vinyl-disc" style="animation-play-state: running;">
+                                <div class="vinyl-label">
+                                    <i class="fa-solid fa-music"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <h2 class="step-title" id="preview-loader-title">Preparando sua prévia...</h2>
+                        <div class="progress-loader">
+                            <div class="progress-loader-fill" id="preview-loader-bar-fill" style="width: 5%;"></div>
+                        </div>
+                        <p class="loader-status-text" id="preview-loader-status-text">Preparando algo especial para você...</p>
+                        <p class="loader-subtitle">Isso levará apenas alguns instantes. Estamos esculpindo cada detalhe!</p>
+                    </div>
+
+                    <!-- Estado B: Prévia Pronta -->
+                    <div class="text-center" id="preview-ready" style="display: none;">
+                        <h2 class="step-title"><i class="fa-solid fa-circle-play" style="color: var(--primary-pink);"></i> Prévia Pronta!</h2>
+                        <p class="step-subtitle">Ouça uma amostra exclusiva de 30 segundos de como sua canção ficou linda.</p>
+                        
+                        <!-- Player Customizado de Prévia -->
+                        <div class="audio-player-container" style="max-width: 500px; margin: 1.5rem auto 2rem;">
+                            <div class="audio-controls">
+                                <button type="button" class="play-pause-btn" id="preview-play-pause-btn">
+                                    <i class="fa-solid fa-play" id="preview-play-icon"></i>
+                                </button>
+                            </div>
+                            <div class="audio-progress-bar" id="preview-audio-progress-bar">
+                                <div class="audio-progress-fill" id="preview-audio-progress-fill"></div>
+                            </div>
+                            <div class="audio-time-row">
+                                <span id="preview-current-time">00:00</span>
+                                <span id="preview-total-duration">00:30</span>
+                            </div>
+                            <!-- Aviso do Limite de 30s -->
+                            <p id="preview-cap-notice" style="color: var(--primary-pink); font-size: 0.85rem; margin-top: 0.8rem; font-weight: bold; display: none;">
+                                <i class="fa-solid fa-circle-info"></i> Esta é uma prévia de 30 segundos. Adquira a versão completa para ouvir toda a música!
+                            </p>
+                        </div>
+
+                        <!-- Letra da Música -->
+                        <div class="lyrics-box" style="max-height: 220px; overflow-y: auto; max-width: 600px; margin: 0 auto 2.5rem; border: 1px solid rgba(255, 107, 139, 0.15); padding: 1.5rem;">
+                            <div class="lyrics-title-tag" style="font-size: 1.2rem; margin-bottom: 0.8rem;">Letra Composta</div>
+                            <div class="lyrics-content" id="preview-lyrics-content" style="font-size: 0.95rem; line-height: 1.6;"></div>
+                        </div>
+
+                        <!-- Botões de Navegação -->
+                        <div class="buttons-navigation buttons-center">
+                            <button type="button" class="btn-pink btn-full" id="btn-to-payment">
+                                <i class="fa-solid fa-heart"></i> Amei! Adquirir Música Completa <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- PASSO 5: Pagamento -->
-                <div class="form-step" id="step-5">
-                    <h2 class="step-title">Quase lá! Finalize seu pedido</h2>
-                    <p class="step-subtitle">Sua música personalizada será composta com exclusividade e entregue em poucos minutos após a confirmação.</p>
+                <!-- PASSO 6: Pagamento -->
+                <div class="form-step" id="step-6">
+                    <h2 class="step-title">Libere a Versão Completa em MP3</h2>
+                    <p class="step-subtitle">Adquira sua obra de arte completa por um valor único. Você terá acesso vitalício para ouvir e fazer download!</p>
                     
                     <div class="payment-box">
                         <span class="payment-badge">VALOR ÚNICO</span>
                         <div class="price-title">R$ 97</div>
-                        <p class="price-subtitle">Sem assinaturas ou taxas ocultas. Acesso vitalício.</p>
+                        <p class="price-subtitle">Liberação instantânea do áudio completo e download em alta qualidade.</p>
                         
                         <button type="button" class="btn-pink btn-full" id="btn-checkout">
                             <i class="fa-solid fa-credit-card"></i> Ir para Pagamento Seguro
@@ -193,33 +249,31 @@
                     </div>
                     
                     <div class="buttons-navigation">
-                        <button type="button" class="btn-secondary" id="btn-prev-5">
-                            <i class="fa-solid fa-arrow-left"></i> Voltar
+                        <button type="button" class="btn-secondary" id="btn-back-to-preview">
+                            <i class="fa-solid fa-arrow-left"></i> Ouvir Prévia Novamente
                         </button>
                     </div>
                 </div>
 
-                <!-- PASSO 6: Aguardando / Confirmação -->
-                <div class="form-step" id="step-6">
-                    <div class="wait-container">
-                        <!-- Vinil Giratório -->
+                <!-- PASSO 7: Aguardando / Confirmação -->
+                <div class="form-step" id="step-7">
+                    <div class="wait-container text-center">
                         <div class="vinyl-wrapper">
                             <div class="vinyl-disc" id="vinyl-disc">
                                 <div class="vinyl-label">
-                                    <i class="fa-solid fa-music"></i>
+                                    <i class="fa-solid fa-check"></i>
                                 </div>
                             </div>
-                            <img src="https://images.unsplash.com/photo-1619983081563-430f63602796?w=100&q=80" style="display:none;" alt="needle" class="vinyl-needle" id="vinyl-needle">
                         </div>
                         
-                        <h2 class="step-title" id="loader-title">Criando sua obra de arte...</h2>
+                        <h2 class="step-title">Sua Música foi Liberada!</h2>
                         
                         <div class="progress-loader">
-                            <div class="progress-loader-fill" id="loader-bar-fill"></div>
+                            <div class="progress-loader-fill" id="loader-bar-fill" style="width: 100%;"></div>
                         </div>
                         
-                        <p class="loader-status-text" id="loader-status-text">Preparando algo especial para você...</p>
-                        <p class="loader-subtitle">Isso pode levar de 1 a 2 minutos. Não feche esta janela!</p>
+                        <p class="loader-status-text" id="loader-status-text">Últimos retoques na sua obra de arte...</p>
+                        <p class="loader-subtitle">Seu presente exclusivo está pronto! Redirecionando em instantes...</p>
                     </div>
                 </div>
 

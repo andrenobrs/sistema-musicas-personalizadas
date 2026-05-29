@@ -48,12 +48,12 @@ def trigger_suno_generation(prompt, style, title):
         "Content-Type": "application/json"
     }
     
-    # Mapeamento do estilo em português para tags em inglês para ajudar a IA Suno
+    # Mapeamento do estilo em português para as tags solicitadas do Suno
     style_mapping = {
-        "Sertanejo": "brazilian sertanejo, acoustic guitar, emotional male vocals, country ballad",
-        "MPB": "brazilian mpb, soft bossa nova, acoustic nylon guitar, warm vocals, gentle percussion",
-        "Pop": "modern pop, synthpop, upbeat drums, catchy vocals, emotional melody",
-        "Gospel": "contemporary worship, uplifting gospel, emotional piano, beautiful vocals, acoustic guitar"
+        "Sertanejo": "sertanejo universitario romantico",
+        "MPB": "mpb romantica brasileira",
+        "Pop": "pop romantico brasileiro",
+        "Gospel": "gospel leve romantico"
     }
     suno_style = style_mapping.get(style, style)
     
@@ -62,7 +62,8 @@ def trigger_suno_generation(prompt, style, title):
         "customMode": True,
         "style": suno_style,
         "title": title,
-        "instrumental": False
+        "instrumental": False,
+        "model": "chirp-v3-5"
     }
     
     try:

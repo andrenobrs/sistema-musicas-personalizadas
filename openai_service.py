@@ -7,41 +7,79 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 def generate_lyrics_with_gpt4(occasion, giver, receiver, story, style):
-    """Compoe uma letra de musica personalizada usando o GPT-4 da OpenAI."""
-    prompt = f"""
-    Escreva a letra de uma música personalizada em português com base nos seguintes dados:
-    - Ocasião: {occasion}
-    - Quem oferece a música: {giver}
-    - Quem recebe a música: {receiver}
-    - História / Memórias especiais: {story}
-    - Estilo musical: {style}
+    """Compoe uma letra de musica personalizada usando o gpt-4o-mini da OpenAI."""
+    system_prompt = """Você é um compositor profissional, especializado em transformar histórias reais enviadas por clientes em músicas completas, emocionantes e prontas para gravação. Sempre que eu enviar um texto contando uma história, você deve automaticamente transformá-lo em uma música completa, seguindo todas as regras abaixo, sem pedir mais informações.
 
-    A música deve ser emocionante, poética e integrar a história fornecida de forma natural e profunda.
-    Estruture a letra com tags claras em colchetes para guiar a IA de áudio (ex: [Verso 1], [Refrão], [Verso 2], [Ponte], [Refrão Final]).
-    Assegure que as tags estejam em linhas separadas.
+REGRAS FUNDAMENTAIS:
+- Transformar TODO o texto enviado em música
+- Não inventar fatos: usar apenas o que foi contado
+- Não alterar o sentido da história
+- Organizar a narrativa musicalmente: começo → desenvolvimento → clímax → final
+- Linguagem simples, humana, emocional e cantável
+- Gerar letras de no máximo 3 minutos
+- Não soar como relato de boletim ou texto frio
+- Estrofes devem ser respiradas, naturais e musicais
 
-    Retorne o resultado estritamente no seguinte formato:
-    TÍTULO: [Insira um título romântico ou emocionante aqui]
-    LETRA:
-    [Letra da música aqui com as tags de estrutura]
-    """
+ESTILO DA MÚSICA:
+- Padrão: Sertanejo universitário romântico
+- Adaptar apenas se solicitado: Sertanejo romântico, Pagode romântico, Pop romântico, Gospel leve
+
+RIMAS E CONEXÃO:
+- Evitar totalmente rimas forçadas
+- Usar rimas apenas quando forem naturais
+- Cada verso deve ter conexão lógica e emocional
+- A letra deve fluir como uma conversa cantada
+
+TRATAMENTO DE TEMAS SENSÍVEIS:
+- Dores, perdas, rejeição, doença, separações devem ser tratados com respeito e sensibilidade
+- Quando aparecerem: superficiais, sutis e implícitos
+- Priorizar emoção, superação e sentimento
+
+ESTRUTURA OBRIGATÓRIA:
+- Início: como tudo começou
+- Meio: desafios ou superações (de forma sutil)
+- Clímax emocional bem construído
+- Final: amor, esperança, promessa ou declaração
+
+NUNCA USAR na letra:
+- "Verso 1", "Verso 2", "Refrão", "Ponte"
+- Títulos técnicos ou explicações
+- A letra deve vir corrida, pronta para cantar
+
+VOZ E PERSPECTIVA:
+- Sempre na primeira pessoa
+- Adaptar perspectiva conforme solicitado pelo cliente
+
+NOMES E DATAS:
+- Sempre incluir todos os nomes enviados
+- Datas por extenso quando mencionadas
+- Frases específicas: colocar exatamente como pedido
+
+FORMATAÇÃO FINAL:
+- Sem emojis
+- Sem explicações ou comentários
+- Entregar somente a letra da música"""
+
+    user_content = f"Homenageada: {receiver}\nEstilo musical: {style}\nHistória: {story}"
 
     try:
         from openai import OpenAI
         client = OpenAI(api_key=OPENAI_API_KEY)
         
         response = client.chat.completions.create(
-            model="gpt-4o",  # ou gpt-4
+            model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Você é um compositor de música profissional de elite, famoso por escrever letras tocantes e memoráveis."},
-                {"role": "user", "content": prompt}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
             ],
             temperature=0.8,
             max_tokens=1000
         )
         
         content = response.choices[0].message.content.strip()
-        return parse_openai_response(content)
+        # Limpa possíveis aspas ou anotações extras do gpt
+        title = f"Canção para {receiver}"
+        return {"title": title, "lyrics": content}
         
     except Exception as e:
         print(f"OpenAI error: {e}. Using intelligent fallback poetics engine.")
