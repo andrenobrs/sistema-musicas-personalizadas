@@ -194,11 +194,11 @@ def get_mock_status(task_id):
     # 12 a 20 segundos: Compondo e gravando o vocal
     # > 20 segundos: Sucesso absoluto!
     if elapsed < 8:
-        return {"status": "generating_audio", "message": "Na fila do estúdio virtual do Suno AI..."}
+        return {"status": "generating_audio", "message": "Preparando arranjos especiais..."}
     elif elapsed < 16:
         return {"status": "generating_audio", "message": "Compondo a partitura e afinando instrumentos..."}
     elif elapsed < 22:
-        return {"status": "generating_audio", "message": "Gravando vocais afinados com inteligência artificial..."}
+        return {"status": "generating_audio", "message": "Gravando os vocais e harmonizando a melodia..."}
     else:
         return {
             "status": "completed",

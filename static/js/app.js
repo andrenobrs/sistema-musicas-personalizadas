@@ -202,24 +202,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 const paymentStatus = result.payment_status;
                 
                 if (paymentStatus === "pending") {
-                    statusText.innerText = "Aguardando aprovação do pagamento...";
-                    progress = Math.min(progress + 2, 15);
+                    statusText.innerText = "Preparando algo especial para você...";
+                    progress = Math.min(progress + 2, 18);
                     loaderBarFill.style.width = `${progress}%`;
                 } 
                 else if (status === "generating_lyrics") {
-                    statusText.innerText = "Escrevendo a letra personalizada com GPT-4...";
-                    progress = Math.min(progress + 3, 40);
+                    statusText.innerText = "Escrevendo cada verso com carinho...";
+                    progress = Math.min(progress + 3, 45);
                     loaderBarFill.style.width = `${progress}%`;
                 } 
                 else if (status === "generating_audio") {
-                    // O backend pode enviar uma mensagem personalizada da API/Simulador
-                    statusText.innerText = "Geração da melodia iniciada no Suno AI...";
-                    progress = Math.min(progress + 2, 85);
+                    progress = Math.min(progress + 2, 90);
                     loaderBarFill.style.width = `${progress}%`;
+                    
+                    if (progress < 68) {
+                        statusText.innerText = "Afinando os instrumentos...";
+                    } else {
+                        statusText.innerText = "Sua música está tomando forma...";
+                    }
                 } 
                 else if (status === "completed") {
                     clearInterval(intervalId);
-                    statusText.innerText = "Música gerada com sucesso! Redirecionando...";
+                    statusText.innerText = "Últimos retoques na sua obra de arte...";
                     loaderBarFill.style.width = "100%";
                     
                     setTimeout(() => {
