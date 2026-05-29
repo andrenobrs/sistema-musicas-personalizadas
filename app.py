@@ -124,12 +124,12 @@ def create_order():
         return jsonify({"error": "Dados ausentes"}), 400
         
     occasion = data.get("occasion")
-    giver_name = data.get("giver_name")
+    giver_name = "" # Forçado vazio para remover o campo do form e manter compatibilidade com DB
     receiver_name = data.get("receiver_name")
     story = data.get("story", "")
     style = data.get("style")
     
-    if not all([occasion, giver_name, receiver_name, style]):
+    if not all([occasion, receiver_name, style]):
         return jsonify({"error": "Preencha todos os campos obrigatórios."}), 400
         
     # Salva o pedido inicial no banco de dados

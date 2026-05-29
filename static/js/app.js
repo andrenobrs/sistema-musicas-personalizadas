@@ -52,11 +52,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- PASSO 2: NOMES ---
     document.getElementById("btn-prev-2").addEventListener("click", () => goToStep(1));
     document.getElementById("btn-next-2").addEventListener("click", () => {
-        const giver = document.getElementById("giver_name").value.trim();
         const receiver = document.getElementById("receiver_name").value.trim();
         
-        if (!giver || !receiver) {
-            alert("Por favor, preencha os nomes de quem dá e de quem recebe.");
+        if (!receiver) {
+            alert("Por favor, preencha o nome do presenteado.");
             return;
         }
         goToStep(3);
@@ -130,7 +129,6 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const payload = {
             occasion: selectedOccasion,
-            giver_name: document.getElementById("giver_name").value.trim(),
             receiver_name: document.getElementById("receiver_name").value.trim(),
             story: document.getElementById("story").value.trim(),
             style: selectedStyle
@@ -226,9 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("preview-loading").style.display = "none";
         document.getElementById("preview-ready").style.display = "block";
         
-        // Carrega as letras
-        const lyricsContent = document.getElementById("preview-lyrics-content");
-        lyricsContent.innerText = orderData.lyrics || "Homenagem em melodia...";
+
 
         // Cria elemento de áudio
         if (previewAudio) {
