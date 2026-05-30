@@ -61,74 +61,138 @@
             </div>
         {% else %}
             
-            <div class="glass-card">
+            <div class="glass-card" id="delivery-card">
                 
-                <!-- Layout de Duas Colunas (Player e Letra) -->
-                <div class="delivery-layout">
-                    
-                    <!-- COLUNA ESQUERDA: Player e Ações -->
-                    <div class="delivery-song-info">
-                        
-                        <!-- Vinil Interativo que Gira com o Som -->
-                        <div class="delivery-vinyl-disc" id="vinyl-disc">
-                            <img src="{{ order.image_url or 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=300&q=80' }}" alt="Capa do Álbum">
+                {% if order.status != 'completed' %}
+                    <!-- Tela de Geração Ativa pós-pagamento -->
+                    <div class="wait-container text-center" id="delivery-loading" style="padding: 3rem 1.5rem;">
+                        <div class="vinyl-wrapper" style="margin-bottom: 2rem;">
+                            <div class="vinyl-disc" id="delivery-vinyl-loader" style="animation: rotate 5s linear infinite; animation-play-state: running; width: 140px; height: 140px; background: #111; border-radius: 50%; background-image: radial-gradient(circle, #333 10%, #111 30%, #222 40%, #111 60%, #222 70%, #111 85%); border: 3px solid #111; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25); margin: 0 auto;">
+                                <div class="vinyl-label" style="width: 40px; height: 40px; background: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; color: #111; font-weight: bold; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);">
+                                    <i class="fa-solid fa-spinner fa-spin"></i>
+                                </div>
+                            </div>
                         </div>
+                        <h2 class="step-title" style="font-size: 2rem; margin-bottom: 0.8rem;">Compondo sua obra de arte...</h2>
+                        <div class="progress-loader" style="width: 100%; max-width: 480px; height: 6px; background: var(--primary-pink-light); border-radius: 10px; margin: 0 auto 1.5rem; overflow: hidden; position: relative;">
+                            <div class="progress-loader-fill" id="delivery-loader-bar" style="width: 15%; height: 100%; background: var(--primary-pink); border-radius: 10px; transition: width 0.8s ease;"></div>
+                        </div>
+                        <p class="loader-status-text" id="delivery-loader-status" style="font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">Afinando os instrumentos e aquecendo a voz...</p>
+                        <p class="loader-subtitle" style="font-size: 0.9rem; color: var(--text-muted);">Sua música está sendo criada por inteligência artificial sob medida. Isso levará aproximadamente 2 a 3 minutos.</p>
+                    </div>
+                    
+                    <script>
+                        document.addEventListener("DOMContentLoaded", () => {
+                            const loaderBar = document.getElementById("delivery-loader-bar");
+                            const loaderStatus = document.getElementById("delivery-loader-status");
+                            let progress = 15;
+                            
+                            const intervalId = setInterval(async () => {
+                                try {
+                                    const response = await fetch("/api/order/{{ order.id }}");
+                                    const result = await response.json();
+                                    
+                                    if (result.success) {
+                                        const status = result.status;
+                                        
+                                        if (status === "generating_lyrics") {
+                                            loaderStatus.innerText = "Escrevendo os versos e harmonizando a letra...";
+                                            progress = Math.min(progress + 3, 45);
+                                            loaderBar.style.width = progress + "%";
+                                        } else if (status === "generating_audio") {
+                                            progress = Math.min(progress + 2, 92);
+                                            loaderBar.style.width = progress + "%";
+                                            if (progress < 70) {
+                                                loaderStatus.innerText = "Compondo o arranjo e gravando os instrumentos...";
+                                            } else {
+                                                loaderStatus.innerText = "Gravando vocais premium e harmonizando melodia...";
+                                            }
+                                        } else if (status === "completed") {
+                                            clearInterval(intervalId);
+                                            loaderStatus.innerText = "Concluído! Carregando seu player...";
+                                            loaderBar.style.width = "100%";
+                                            setTimeout(() => {
+                                                window.location.reload();
+                                            }, 1200);
+                                        } else if (status === "failed") {
+                                            clearInterval(intervalId);
+                                            loaderStatus.innerText = "Houve um problema na geração. Por favor, contate o suporte.";
+                                            loaderStatus.style.color = "red";
+                                        }
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                }
+                            }, 4000);
+                        });
+                    </script>
+                {% else %}
+                    <!-- Layout de Duas Colunas (Player e Letra) -->
+                    <div class="delivery-layout">
                         
-                        <h2 class="delivery-title">{{ order.occasion }} para Você</h2>
-                        <p class="delivery-meta">Uma canção de <strong>{{ order.giver_name }}</strong> dedicada a <strong>{{ order.receiver_name }}</strong></p>
-                        
-                        <!-- Elemento de Áudio HTML Oculto -->
-                        <audio id="audio-element" src="{{ order.audio_url }}"></audio>
-                        
-                        <!-- Player Customizado Premium -->
-                        <div class="audio-player-container">
-                            <div class="audio-controls">
-                                <button type="button" class="play-pause-btn" id="play-pause-btn">
-                                    <i class="fa-solid fa-play" id="play-icon"></i>
+                        <!-- COLUNA ESQUERDA: Player e Ações -->
+                        <div class="delivery-song-info">
+                            
+                            <!-- Vinil Interativo que Gira com o Som -->
+                            <div class="delivery-vinyl-disc" id="vinyl-disc">
+                                <img src="{{ order.image_url or 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=300&q=80' }}" alt="Capa do Álbum">
+                            </div>
+                            
+                            <h2 class="delivery-title">{{ order.occasion }} para Você</h2>
+                            <p class="delivery-meta">Uma canção dedicada a <strong>{{ order.receiver_name }}</strong></p>
+                            
+                            <!-- Elemento de Áudio HTML Oculto -->
+                            <audio id="audio-element" src="{{ order.audio_url }}"></audio>
+                            
+                            <!-- Player Customizado Premium -->
+                            <div class="audio-player-container">
+                                <div class="audio-controls">
+                                    <button type="button" class="play-pause-btn" id="play-pause-btn">
+                                        <i class="fa-solid fa-play" id="play-icon"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Barra de Progresso Interativa -->
+                                <div class="audio-progress-bar" id="audio-progress-bar">
+                                    <div class="audio-progress-fill" id="audio-progress-fill"></div>
+                                </div>
+                                
+                                <!-- Contadores de Tempo -->
+                                <div class="audio-time-row">
+                                    <span id="current-time">00:00</span>
+                                    <span id="total-duration">--:--</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Botões de Ações -->
+                            <div class="delivery-actions">
+                                <a href="{{ order.audio_url }}" download="Minha_Musica_Personalizada.mp3" target="_blank" class="btn-pink btn-full" id="btn-download">
+                                    <i class="fa-solid fa-download"></i> Baixar MP3
+                                </a>
+                                
+                                <button type="button" class="btn-secondary btn-full" id="btn-share-whatsapp" style="border-color: #25D366; color: #25D366;">
+                                    <i class="fa-brands fa-whatsapp"></i> Compartilhar no WhatsApp
                                 </button>
                             </div>
                             
-                            <!-- Barra de Progresso Interativa -->
-                            <div class="audio-progress-bar" id="audio-progress-bar">
-                                <div class="audio-progress-fill" id="audio-progress-fill"></div>
+                            <!-- Aviso de Expiração -->
+                            <div class="expiration-notice">
+                                <i class="fa-solid fa-clock"></i>
+                                <span>Este presente musical estará disponível até {{ order.expires_at[:10] }} (30 dias).</span>
                             </div>
                             
-                            <!-- Contadores de Tempo -->
-                            <div class="audio-time-row">
-                                <span id="current-time">00:00</span>
-                                <span id="total-duration">--:--</span>
+                        </div>
+                        
+                        <!-- COLUNA DIREITA: Letra da Música -->
+                        <div class="lyrics-box">
+                            <div class="lyrics-title-tag">Letra da Canção</div>
+                            <div class="lyrics-content">
+                                {{ order.lyrics }}
                             </div>
-                        </div>
-                        
-                        <!-- Botões de Ações -->
-                        <div class="delivery-actions">
-                            <a href="{{ order.audio_url }}" download="Minha_Musica_Personalizada.mp3" target="_blank" class="btn-pink btn-full" id="btn-download">
-                                <i class="fa-solid fa-download"></i> Baixar MP3
-                            </a>
-                            
-                            <button type="button" class="btn-secondary btn-full" id="btn-share-whatsapp" style="border-color: #25D366; color: #25D366;">
-                                <i class="fa-brands fa-whatsapp"></i> Compartilhar no WhatsApp
-                            </button>
-                        </div>
-                        
-                        <!-- Aviso de Expiração -->
-                        <div class="expiration-notice">
-                            <i class="fa-solid fa-clock"></i>
-                            <span>Este presente musical estará disponível até {{ order.expires_at[:10] }} (30 dias).</span>
                         </div>
                         
                     </div>
-                    
-                    <!-- COLUNA DIREITA: Letra da Música -->
-                    <div class="lyrics-box">
-                        <div class="lyrics-title-tag">Letra da Canção</div>
-                        <div class="lyrics-content">
-                            {{ order.lyrics }}
-                        </div>
-                    </div>
-                    
-                </div>
-                
+                {% endif %}
             </div>
             
         {% endif %}

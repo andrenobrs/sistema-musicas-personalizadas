@@ -59,7 +59,7 @@
                 </div>
                 <div class="checkout-row" style="border-top: 2px dashed rgba(255,107,139,0.2); margin-top: 0.8rem; padding-top: 0.8rem;">
                     <span style="font-weight: bold; color: var(--text-main);">Total a pagar</span>
-                    <span style="font-weight: bold; color: var(--primary-pink); font-size: 1.2rem;">R$ 97,00</span>
+                    <span style="font-weight: bold; color: var(--primary-pink); font-size: 1.2rem;">R$ 29,90</span>
                 </div>
             </div>
             
@@ -68,7 +68,7 @@
             </p>
             
             <button type="button" class="btn-pink btn-full" id="btn-pay-confirm">
-                <i class="fa-solid fa-circle-check"></i> Simular Aprovação (R$97)
+                <i class="fa-solid fa-circle-check"></i> Simular Aprovação (R$29,90)
             </button>
             
             <a href="/" class="btn-secondary btn-full" style="margin-top: 1rem; text-decoration: none;">
@@ -99,13 +99,13 @@
                 } else {
                     alert('Falha ao processar simulação.');
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Simular Aprovação (R$97)';
+                    btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Simular Aprovação (R$29,90)';
                 }
             } catch (err) {
                 console.error(err);
                 alert('Erro na conexão.');
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Simular Aprovação (R$97)';
+                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Simular Aprovação (R$29,90)';
             }
         });
     </script>

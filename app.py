@@ -141,13 +141,6 @@ def create_order():
     # Salva o pedido inicial no banco de dados
     order = db.create_order(occasion, giver_name, receiver_name, story, style)
     
-    # Inicia a geração da melodia e letra IMEDIATAMENTE em segundo plano (para a prévia de 30 segundos)
-    threading.Thread(
-        target=process_music_generation_background,
-        args=(order["id"],),
-        daemon=True
-    ).start()
-    
     checkout_url = f"/checkout-mp/{order['id']}" # Link interno para simulação/checkout real
     
     # Se houver credenciais reais do Mercado Pago configuradas, podemos gerar uma preferência real
@@ -160,7 +153,7 @@ def create_order():
                     {
                         "title": f"Música Personalizada - {occasion} ({receiver_name})",
                         "quantity": 1,
-                        "unit_price": 97.00,
+                        "unit_price": 29.90,
                         "currency_id": "BRL"
                     }
                 ],
@@ -199,7 +192,7 @@ def checkout_mp_simulated(order_id):
 
 @app.route("/api/order/<order_id>/pay-simulate", methods=["POST"])
 def pay_simulate(order_id):
-    """Simula a aprovação imediata do pagamento Mercado Pago."""
+    """Simula a aprovação imediata do pagamento Mercado Pago e inicia a geração."""
     order = db.get_order(order_id)
     if not order:
         return jsonify({"error": "Pedido não encontrado"}), 404
@@ -211,6 +204,14 @@ def pay_simulate(order_id):
     updated_order = db.update_order(order_id, {
         "payment_status": "approved"
     })
+    
+    # Dispara a geração de música em segundo plano se não tiver sido iniciada ainda
+    if updated_order["status"] == "pending":
+        threading.Thread(
+            target=process_music_generation_background,
+            args=(order_id,),
+            daemon=True
+        ).start()
     
     return jsonify({
         "success": True,
@@ -242,9 +243,24 @@ def delivery(order_id):
     if not order:
         return "Pedido não encontrado", 404
         
+    # Se retornar com o sucesso de pagamento na URL, forçamos aprovação
+    if request.args.get("payment") == "success" or request.args.get("status") == "approved":
+        if order["payment_status"] != "approved":
+            order = db.update_order(order_id, {"payment_status": "approved"})
+            
     # Enforça que o pedido deve estar pago para liberar a música inteira
     if order["payment_status"] != "approved":
         return redirect(f"/?order_id={order_id}&step=6")
+        
+    # Dispara a geração de música em segundo plano como fallback de segurança se não foi iniciada
+    if order["status"] == "pending":
+        threading.Thread(
+            target=process_music_generation_background,
+            args=(order_id,),
+            daemon=True
+        ).start()
+        # Atualiza a cópia na memória para refletir a mudança imediata para o template
+        order = db.get_order(order_id)
         
     # Verifica se expirou (30 dias)
     expires_at = datetime.fromisoformat(order["expires_at"])
@@ -280,11 +296,18 @@ def mercadopago_webhook():
                 if status == "approved" and order_id:
                     order = db.get_order(order_id)
                     if order and order["payment_status"] != "approved":
-                        # Apenas marca o pagamento como aprovado (a música já foi/está sendo gerada)
-                        db.update_order(order_id, {
+                        # Marca o pagamento como aprovado e dispara a geração
+                        updated_order = db.update_order(order_id, {
                             "payment_status": "approved"
                         })
                         print(f"Payment approved via webhook for order {order_id}!")
+                        
+                        if updated_order["status"] == "pending":
+                            threading.Thread(
+                                target=process_music_generation_background,
+                                args=(order_id,),
+                                daemon=True
+                            ).start()
                         
         return jsonify({"status": "ok"}), 200
     except Exception as e:

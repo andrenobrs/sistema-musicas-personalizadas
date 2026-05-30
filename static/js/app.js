@@ -5,7 +5,7 @@
 document.addEventListener("DOMContentLoaded", () => {
     // Estado do Wizard
     let currentStep = 1;
-    const totalSteps = 6; // 1: Ocasião, 2: Nomes, 3: História, 4: Estilo, 5: Prévia, 6: Pagamento
+    const totalSteps = 5; // 1: Ocasião, 2: Nomes, 3: História, 4: Estilo, 6: Pagamento
     
     // Dados selecionados
     let selectedOccasion = "";
@@ -22,7 +22,6 @@ document.addEventListener("DOMContentLoaded", () => {
         2: document.getElementById("step-2"),
         3: document.getElementById("step-3"),
         4: document.getElementById("step-4"),
-        5: document.getElementById("step-5"),
         6: document.getElementById("step-6"),
         7: document.getElementById("step-7")
     };
@@ -83,37 +82,51 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("btn-prev-4").addEventListener("click", () => goToStep(3));
-    document.getElementById("btn-next-4").addEventListener("click", () => {
+    document.getElementById("btn-next-4").addEventListener("click", async () => {
         if (!selectedStyle) {
             alert("Por favor, selecione um estilo musical para continuar.");
             return;
         }
         
-        // Vai para a Prévia (Passo 5) e inicia a geração em segundo plano imediatamente!
-        goToStep(5);
-        startPreviewGeneration();
-    });
-
-    // --- PASSO 5: PRÉVIA (AÇÕES) ---
-    document.getElementById("btn-to-payment").addEventListener("click", () => {
-        // Pausa áudio se estiver tocando
-        if (previewAudio) {
-            previewAudio.pause();
+        const btn = document.getElementById("btn-next-4");
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparando...';
+        
+        const payload = {
+            occasion: selectedOccasion,
+            receiver_name: document.getElementById("receiver_name").value.trim(),
+            story: document.getElementById("story").value.trim(),
+            style: selectedStyle
+        };
+        
+        try {
+            const response = await fetch("/api/order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                orderId = result.order.id;
+                checkoutUrl = result.checkout_url;
+                goToStep(6); // Pula direto para o pagamento!
+            } else {
+                alert("Erro ao preparar o pedido. Por favor, tente novamente.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Erro de conexão com o servidor.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
         }
-        goToStep(6);
-    });
-
-    document.getElementById("btn-edit-story").addEventListener("click", () => {
-        // Pausa áudio se estiver tocando
-        if (previewAudio) {
-            previewAudio.pause();
-        }
-        goToStep(3);
     });
 
     // --- PASSO 6: PAGAMENTO (AÇÕES) ---
-    document.getElementById("btn-back-to-preview").addEventListener("click", () => {
-        goToStep(5);
+    document.getElementById("btn-back-to-style").addEventListener("click", () => {
+        goToStep(4);
     });
 
     document.getElementById("btn-checkout").addEventListener("click", () => {
@@ -350,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Adiciona ou remove classe rosa do card principal
         const mainCard = document.getElementById("main-glass-card");
         if (mainCard) {
-            if (step === 5 || step === 7) {
+            if (step === 7) {
                 mainCard.classList.add("card-pink");
             } else {
                 mainCard.classList.remove("card-pink");
@@ -358,7 +371,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         // Atualiza a barra de progresso (somente se for passos de preenchimento 1 a 6)
-        if (step <= totalSteps) {
+        if (step <= 6) {
             wizardProgress.style.display = "flex";
             updateProgressIndicators(step);
         } else {
@@ -367,7 +380,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateProgressIndicators(activeStep) {
-        const fillPercentage = ((activeStep - 1) / (totalSteps - 1)) * 100;
+        const stepMapping = { 1: 0, 2: 25, 3: 50, 4: 75, 6: 100 };
+        const fillPercentage = stepMapping[activeStep] !== undefined ? stepMapping[activeStep] : 0;
         progressBarFill.style.width = `${fillPercentage}%`;
         
         progressDots.forEach(dot => {
@@ -376,7 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if (stepNum === activeStep) {
                 dot.classList.add("active");
-            } else if (stepNum < activeStep) {
+            } else if (stepNum < activeStep || (activeStep === 6 && stepNum < 6)) {
                 dot.classList.add("completed");
             }
         });

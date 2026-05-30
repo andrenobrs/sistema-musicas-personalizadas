@@ -32,8 +32,7 @@
                 <div class="progress-dot" data-step="2">2</div>
                 <div class="progress-dot" data-step="3">3</div>
                 <div class="progress-dot" data-step="4">4</div>
-                <div class="progress-dot" data-step="5">5</div>
-                <div class="progress-dot" data-step="6">6</div>
+                <div class="progress-dot" data-step="6">5</div>
             </div>
 
             <!-- FORMULÁRIO MULTI-STEP -->
@@ -169,65 +168,7 @@
                     </div>
                 </div>
 
-                <!-- PASSO 5: Prévia da Música (Capped 30 segundos) -->
-                <div class="form-step" id="step-5">
-                    
-                    <!-- Disco de Vinil Girando (Centralizado) - Sempre visível no Passo 5 -->
-                    <div class="vinyl-wrapper" style="margin-bottom: 2rem;">
-                        <div class="vinyl-disc" id="preview-vinyl-disc" style="animation-play-state: running;">
-                            <div class="vinyl-label">
-                                <i class="fa-solid fa-music"></i>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Estado A: Carregando/Gerando -->
-                    <div class="wait-container text-center" id="preview-loading" style="padding-top: 0.5rem;">
-                        <h2 class="step-title" id="preview-loader-title">Preparando sua prévia...</h2>
-                        <div class="progress-loader">
-                            <div class="progress-loader-fill" id="preview-loader-bar-fill" style="width: 5%;"></div>
-                        </div>
-                        <p class="loader-status-text" id="preview-loader-status-text">Preparando algo especial para você...</p>
-                        <p class="loader-subtitle">Isso levará apenas alguns instantes. Estamos esculpindo cada detalhe!</p>
-                    </div>
-
-                    <!-- Estado B: Prévia Pronta -->
-                    <div class="text-center" id="preview-ready" style="display: none; padding-top: 0.5rem;">
-                        <h2 class="step-title" style="font-size: 2rem; margin-bottom: 0.5rem;">Ouça sua prévia exclusiva!</h2>
-                        <p class="step-subtitle" style="margin-bottom: 2rem;">Gostou? Adquira a versão completa.</p>
-                        
-                        <!-- Player Customizado de Prévia -->
-                        <div class="audio-player-container" style="max-width: 480px; margin: 0 auto 2.5rem; background: var(--white); border: 2px solid rgba(255, 107, 139, 0.15); border-radius: 20px; padding: 1.5rem; box-shadow: var(--shadow-soft);">
-                            <div class="audio-controls" style="display: flex; align-items: center; justify-content: center; margin-bottom: 1.2rem;">
-                                <button type="button" class="play-pause-btn" id="preview-play-pause-btn" style="width: 50px; height: 50px; border-radius: 50%; background: var(--primary-pink); border: none; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; transition: var(--transition-smooth);">
-                                    <i class="fa-solid fa-play" id="preview-play-icon"></i>
-                                </button>
-                            </div>
-                            <div class="audio-progress-bar" id="preview-audio-progress-bar" style="width: 100%; height: 6px; background: var(--primary-pink-light); border-radius: 10px; cursor: pointer; position: relative; margin-bottom: 0.5rem;">
-                                <div class="audio-progress-fill" id="preview-audio-progress-fill" style="width: 0%; height: 100%; background: var(--primary-pink); border-radius: 10px;"></div>
-                            </div>
-                            <div class="audio-time-row" style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">
-                                <span id="preview-current-time">00:00</span>
-                                <span id="preview-total-duration">00:30</span>
-                            </div>
-                            <!-- Aviso do Limite de 30s -->
-                            <p id="preview-cap-notice" style="color: var(--primary-pink); font-size: 0.85rem; margin-top: 0.8rem; font-weight: bold; display: none;">
-                                <i class="fa-solid fa-circle-info"></i> Esta é uma prévia de 30 segundos. Adquira a versão completa para ouvir toda a música!
-                            </p>
-                        </div>
-
-                        <!-- Botão de Compra e Ajuste (Centralizados) -->
-                        <div style="display: flex; flex-direction: column; align-items: center; gap: 1.2rem; width: 100%; max-width: 480px; margin: 0 auto;">
-                            <button type="button" class="btn-pink btn-full" id="btn-to-payment" style="display: none; font-size: 1.15rem; padding: 1.2rem 2.8rem; border-radius: 50px; font-weight: bold; box-shadow: var(--shadow-button); justify-content: center; align-items: center;">
-                                🎵 Quero a música completa! R$97
-                            </button>
-                            
-                            <button type="button" class="btn-secondary" id="btn-edit-story" style="border: none; background: transparent; color: var(--text-muted); text-decoration: underline; font-size: 0.95rem; font-weight: 500; cursor: pointer; padding: 0.5rem 1rem; box-shadow: none;">
-                                Voltar e ajustar minha história
-                            </button>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- PASSO 6: Pagamento -->
                 <div class="form-step" id="step-6">
@@ -236,7 +177,7 @@
                     
                     <div class="payment-box">
                         <span class="payment-badge">VALOR ÚNICO</span>
-                        <div class="price-title">R$ 97</div>
+                        <div class="price-title">R$ 29,90</div>
                         <p class="price-subtitle">Liberação instantânea do áudio completo e download em alta qualidade.</p>
                         
                         <button type="button" class="btn-pink btn-full" id="btn-checkout">
@@ -250,8 +191,8 @@
                     </div>
                     
                     <div class="buttons-navigation">
-                        <button type="button" class="btn-secondary" id="btn-back-to-preview">
-                            <i class="fa-solid fa-arrow-left"></i> Ouvir Prévia Novamente
+                        <button type="button" class="btn-secondary" id="btn-back-to-style">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar e Ajustar Estilo
                         </button>
                     </div>
                 </div>
