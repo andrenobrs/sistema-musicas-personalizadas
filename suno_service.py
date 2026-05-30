@@ -84,7 +84,8 @@ def trigger_suno_generation(prompt, style, title):
         "style": suno_style,
         "title": title,
         "instrumental": False,
-        "model": "chirp-v3-5"
+        "model": "V3_5",
+        "callBackUrl": "https://example.com/suno-callback"
     }
     
     try:
@@ -130,7 +131,7 @@ def get_suno_status(task_id):
         print("="*80 + "\n")
         return res
         
-    url = f"{KIE_AI_BASE_URL}/api/v1/jobs/recordInfo?taskId={task_id}"
+    url = f"{KIE_AI_BASE_URL}/api/v1/generate/record-info?taskId={task_id}"
     headers = {
         "Authorization": f"Bearer {KIE_AI_API_KEY or ''}"
     }
@@ -150,33 +151,42 @@ def get_suno_status(task_id):
             status = job_data.get("status", "").lower()
             print(f" -> Status retornado pelo job: {repr(status)}")
             
-            if status in ["success"]:
-                result = job_data.get("result", {})
+            if status in ["success", "text_success"]:
+                # Tenta extrair do formato novo (sunoData)
+                suno_data_list = job_data.get("response", {}).get("sunoData", [])
                 audio_url = None
                 image_url = None
+                stream_audio_url = None
                 
-                if isinstance(result, dict):
-                    result_data = result.get("data", [])
-                    if result_data and isinstance(result_data, list):
-                        audio_url = result_data[0].get("audio_url")
-                        image_url = result_data[0].get("image_url")
-                    else:
-                        audio_url = result.get("audio_url")
-                        image_url = result.get("image_url")
-                        
+                if suno_data_list and isinstance(suno_data_list, list):
+                    first_track = suno_data_list[0]
+                    audio_url = first_track.get("audioUrl") or first_track.get("sourceAudioUrl") or first_track.get("streamAudioUrl")
+                    stream_audio_url = first_track.get("streamAudioUrl") or first_track.get("sourceStreamAudioUrl") or audio_url
+                    image_url = first_track.get("imageUrl") or first_track.get("sourceImageUrl")
+                
+                # Fallback para formato antigo/legado caso o Kie.ai mude no futuro
                 if not audio_url:
-                    inner_data = job_data.get("data")
-                    if inner_data and isinstance(inner_data, list):
-                        audio_url = inner_data[0].get("audio_url")
-                        image_url = inner_data[0].get("image_url")
-                        
-                if not image_url:
-                    images = result.get("images", []) if isinstance(result, dict) else []
-                    if images:
-                        image_url = images[0]
-                        
-                # Mostra a URL do áudio final retornado
+                    result = job_data.get("result", {})
+                    if isinstance(result, dict):
+                        result_data = result.get("data", [])
+                        if result_data and isinstance(result_data, list):
+                            audio_url = result_data[0].get("audio_url")
+                            image_url = result_data[0].get("image_url")
+                        else:
+                            audio_url = result.get("audio_url")
+                            image_url = result.get("image_url")
+                    
+                    if not audio_url:
+                        inner_data = job_data.get("data")
+                        if inner_data and isinstance(inner_data, list):
+                            audio_url = inner_data[0].get("audio_url")
+                            image_url = inner_data[0].get("image_url")
+                    
+                    stream_audio_url = audio_url
+
+                # Mostra as URLs extraídas
                 print(f" -> URL de áudio extraída: {repr(audio_url)}")
+                print(f" -> URL de stream extraída: {repr(stream_audio_url)}")
                 print(f" -> URL de imagem extraída: {repr(image_url)}")
                 
                 if audio_url:
@@ -186,22 +196,23 @@ def get_suno_status(task_id):
                     return {
                         "status": "completed",
                         "audio_url": audio_url,
-                        "stream_audio_url": audio_url,
+                        "stream_audio_url": stream_audio_url or audio_url,
                         "image_url": image_url or "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&q=80"
                     }
                 else:
-                    print(" -> O status do job está com sucesso, mas a URL do áudio ainda não está pronta na resposta.")
+                    # Se status for text_success ou success mas as URLs ainda estão vazias, tratamos como gerando_audio
+                    print(" -> O status do job está positivo, mas a URL do áudio ainda não está pronta na resposta.")
                     print("="*80 + "\n")
                     return {"status": "generating_audio"}
                     
-            elif status in ["fail", "error"]:
-                err_msg = job_data.get("failMsg", "Erro desconhecido informado pela API do Suno")
+            elif status in ["fail", "error", "failed"]:
+                err_msg = job_data.get("errorMessage") or job_data.get("failMsg") or "Erro desconhecido informado pela API do Suno"
                 print(f" [ERROR] Geração falhou na API do Suno: {err_msg}")
                 print("="*80 + "\n")
                 return {"status": "failed", "error": err_msg}
                 
-            elif status in ["generating"]:
-                print(" -> A música está sendo gerada ativamente...")
+            elif status in ["generating", "waiting", "queuing"]:
+                print(" -> A música está sendo processada ativamente pelo Suno...")
                 print("="*80 + "\n")
                 return {"status": "generating_audio"}
                 
@@ -210,6 +221,11 @@ def get_suno_status(task_id):
                 print("="*80 + "\n")
                 return {"status": "generating_audio"}
                 
+        if response.status_code == 200 and response_json.get("code") == 422 and "recordInfo is null" in response_json.get("msg", ""):
+            print(" -> A tarefa foi criada mas a API do Kie.ai ainda está registrando o job no banco de dados (recordInfo is null). Aguardando...")
+            print("="*80 + "\n")
+            return {"status": "generating_audio"}
+            
         err_msg = f"Falha na resposta do polling do Kie.ai: {response_json}"
         print(f" [ERROR] {err_msg}")
         print("="*80 + "\n")
