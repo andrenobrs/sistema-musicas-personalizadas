@@ -139,10 +139,10 @@ def generate_fallback_lyrics(occasion, giver, receiver, story, style):
             "ponte": "[Ponte]\nNenhum algoritmo consegue explicar\nO tamanho do brilho que existe em você\nÉ pop, é chic, é ver pra crer!"
         },
         "Gospel": {
-            "v1": f"Deus abençoou sua vida e o seu caminhar / {v1_prefix}\nSua graça nos guia, nos enche de paz\nCom fé no amanhã nós iremos trilhar\nO caminho do bem que o Pai nos traz.",
-            "ref": f"[Refrão]\n{receiver}, você é bênção do Criador\nUm presente sagrado repleto de amor\n{giver_display} agradece ao Senhor por te ter\nSua vida me inspira a vencer e crescer!",
-            "v2": f"Através de {story_hook}\nVemos a mão do Altíssimo nos abençoar\nSob Suas asas, no Seu santo abrigo\nNossa família sempre vai prosperar.",
-            "ponte": "[Ponte]\nO amor de Deus é nossa rocha e fundação\nE nessa harmonia de oração e louvor\nEntregamos a nossa gratidão ao Senhor."
+            "v1": f"Deus abençoou sua vida e o seu caminhar / {v1_prefix}\nSua graça nos guia, nos enche de paz\nCom fé no amanhã nós iremos trilhar\nO caminho do bem que o Pai nos traz." if "mãe" not in occasion_lower else f"Deus abençoou sua vida e o seu caminhar / Mãe, minha rainha, vim te homenagear\nSua graça nos guia, nos enche de paz\nNesta estrada de vida que o Pai nos traz.",
+            "ref": f"[Refrão]\n{receiver}, você é bênção do Criador\nUm presente sagrado repleto de amor\n{giver_display} agradece ao Senhor por te ter\nSua vida me inspira a vencer e crescer!" if "mãe" not in occasion_lower else f"[Refrão]\n{receiver}, você é bênção do Criador\nUma mulher guerreira de fé e de amor\nNo seu sofrimento, Deus te deu proteção\nMãe, seu presente de vida é minha inspiração!",
+            "v2": f"Através de {story_hook}\nVemos a mão do Altíssimo nos abençoar\nSob Suas asas, no Seu santo abrigo\nNossa família sempre vai prosperar." if "mãe" not in occasion_lower else f"Olho para trás e vejo o quanto lutou\nCaiu e levantou, mas sua fé te guardou\nObrigado por me dar o presente da vida\nSua jornada guerreira nunca será esquecida.",
+            "ponte": "[Ponte]\nO amor de Deus é nossa rocha e fundação\nE nessa harmonia de oração e louvor\nEntregamos a nossa gratidão ao Senhor." if "mãe" not in occasion_lower else f"[Ponte]\nO amor do Senhor brilha em seu caminhar\nGuerreira de oração que não cansa de amar\nCom gratidão em louvor eu canto esta canção."
         }
     }
     
