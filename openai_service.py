@@ -7,57 +7,20 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 def generate_lyrics_with_gpt4(occasion, giver, receiver, story, style):
-    """Compoe uma letra de musica personalizada usando o gpt-4o-mini da OpenAI."""
-    system_prompt = """Você é um compositor profissional, especializado em transformar histórias reais enviadas por clientes em músicas completas, emocionantes e prontas para gravação. Sempre que eu enviar um texto contando uma história, você deve automaticamente transformá-lo em uma música completa, seguindo todas as regras abaixo, sem pedir mais informações.
+    estilo_musical = style
+    ocasiao = occasion
+    nome_homenageado = receiver
+    historia = story
 
-REGRAS FUNDAMENTAIS:
-- FOCO PRINCIPAL: A música deve ser totalmente focada na OCASIÃO especificada, no NOME DO HOMENAGEADO e na HISTÓRIA DO CLIENTE.
-- TEMA DA OCASIÃO: Incorpore termos, palavras e sentimentos diretamente associados com a ocasião (por exemplo, se for "Aniversário de mãe", use palavras como "mãe", "aniversário", "parabéns", "colo", "apoio", expressando gratidão e amor materno).
-- Não inventar fatos: usar apenas a história e os sentimentos relatados pelo cliente.
-- Não alterar o sentido da história.
-- Organizar a narrativa musicalmente: começo → desenvolvimento → clímax → final.
-- Linguagem simples, humana, emocional e cantável.
-- Gerar letras de no máximo 3 minutos.
-- Não soar como relato de boletim ou texto frio.
-- Estrofes devem ser respiradas, naturais e musicais.
+    system_prompt = "Você é um compositor de músicas profissional especializado em criar letras em português brasileiro. Retorne apenas a letra da música, sem anotações ou explicações de seções."
 
-ESTILO DA MÚSICA:
-- Adaptar o tom e ritmo conforme o estilo solicitado: Sertanejo, MPB, Pop, Gospel.
-
-RIMAS E CONEXÃO:
-- Evitar totalmente rimas forçadas.
-- Usar rimas apenas quando forem naturais.
-- Cada verso deve ter conexão lógica e emocional.
-- A letra deve fluir como uma conversa cantada.
-
-TRATAMENTO DE TEMAS SENSÍVEIS:
-- Dores, perdas, rejeição, doença, separações devem ser tratados com respeito e sensibilidade.
-- Priorizar emoção, superação e sentimento.
-
-ESTRUTURA OBRIGATÓRIA:
-- Início: introdução dos personagens e início do relato.
-- Meio: os detalhes da história e a relação de afeto.
-- Clímax emocional associado à ocasião.
-- Final: encerramento emocionante de acordo com a celebração/homenagem.
-
-NUNCA USAR na letra:
-- Títulos técnicos ou explicações.
-- A letra deve vir corrida, pronta para cantar.
-
-VOZ E PERSPECTIVA:
-- Sempre na primeira pessoa.
-- Adaptar a perspectiva para que quem está oferecendo a música cante diretamente para quem recebe.
-
-NOMES E DATAS:
-- Sempre incluir os nomes enviados (giver e receiver, se fornecidos).
-- Datas por extenso quando mencionadas.
-
-FORMATAÇÃO FINAL:
-- Sem emojis.
-- Sem explicações ou comentários.
-- Entregar somente a letra da música."""
-
-    user_content = f"Ocasião da Homenagem: {occasion}\nQuem oferece (Giver): {giver}\nQuem recebe (Receiver/Homenageado): {receiver}\nEstilo musical: {style}\nHistória e memórias especiais: {story}"
+    user_content = f"""Escreva uma música de {estilo_musical} em português brasileiro.
+Esta música é uma {ocasiao} para {nome_homenageado}.
+Use OBRIGATORIAMENTE o nome {nome_homenageado} na letra.
+A história/contexto é: {historia}
+NUNCA mencione cônjuge, esposo, esposa, casamento 
+a menos que a ocasião seja casamento.
+A letra deve refletir exatamente a ocasião informada."""
 
     try:
         from openai import OpenAI
@@ -74,7 +37,6 @@ FORMATAÇÃO FINAL:
         )
         
         content = response.choices[0].message.content.strip()
-        # Limpa possíveis aspas ou anotações extras do gpt
         title = f"Canção para {receiver}"
         return {"title": title, "lyrics": content}
         
@@ -177,10 +139,10 @@ def generate_fallback_lyrics(occasion, giver, receiver, story, style):
             "ponte": "[Ponte]\nNenhum algoritmo consegue explicar\nO tamanho do brilho que existe em você\nÉ pop, é chic, é ver pra crer!"
         },
         "Gospel": {
-            "v1": f"Deus traçou o plano e uniu nossas vidas no altar\nSua graça nos guia, nos enche de paz\nCom fé no amanhã nós iremos trilhar\nO caminho do bem que o Pai nos traz.",
+            "v1": f"Deus abençoou sua vida e o seu caminhar / {v1_prefix}\nSua graça nos guia, nos enche de paz\nCom fé no amanhã nós iremos trilhar\nO caminho do bem que o Pai nos traz.",
             "ref": f"[Refrão]\n{receiver}, você é bênção do Criador\nUm presente sagrado repleto de amor\n{giver_display} agradece ao Senhor por te ter\nSua vida me inspira a vencer e crescer!",
             "v2": f"Através de {story_hook}\nVemos a mão do Altíssimo nos abençoar\nSob Suas asas, no Seu santo abrigo\nNossa família sempre vai prosperar.",
-            "ponte": "[Ponte]\nO amor de Deus é nossa rocha e fundação\nE nessa harmonia de oração e louvor\nEntregamos as nossas vidas ao Senhor."
+            "ponte": "[Ponte]\nO amor de Deus é nossa rocha e fundação\nE nessa harmonia de oração e louvor\nEntregamos a nossa gratidão ao Senhor."
         }
     }
     
