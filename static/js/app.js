@@ -1,20 +1,23 @@
 /* =========================================================================
-   LÓGICA JAVASCRIPT DO FORMULÁRIO (WIZARD, PREVIEW & POLLING)
+   LÓGICA JAVASCRIPT DO FORMULÁRIO (WIZARD, PREVIEW, PIX & POLLING)
    ========================================================================= */
 
 document.addEventListener("DOMContentLoaded", () => {
     // Estado do Wizard
     let currentStep = 1;
-    const totalSteps = 5; // 1: Ocasião, 2: Nomes, 3: História, 4: Estilo, 6: Pagamento
+    const totalSteps = 6; // 1: Ocasião, 2: Nomes, 3: História, 4: Estilo, 5: Prévia, 6: Pagamento
     
     // Dados selecionados
     let selectedOccasion = "";
     let selectedStyle = "";
     let orderId = "";
-    let checkoutUrl = "";
     
     // Player de Prévia Global
     let previewAudio = null;
+    
+    // Intervalos e timers de PIX
+    let pixIntervalId = null;
+    let pixCountdownId = null;
 
     // Elementos DOM
     const steps = {
@@ -22,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
         2: document.getElementById("step-2"),
         3: document.getElementById("step-3"),
         4: document.getElementById("step-4"),
+        5: document.getElementById("step-5"),
         6: document.getElementById("step-6"),
         7: document.getElementById("step-7")
     };
@@ -101,6 +105,15 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         
         try {
+            // Configura os títulos da tela de carregamento para a Prévia (Passo 7)
+            document.querySelector("#step-7 .step-title").innerText = "Criando sua prévia personalizada...";
+            document.querySelector("#step-7 .loader-subtitle").innerText = "A nossa IA está escrevendo e compondo uma melodia exclusiva para a sua história.";
+            document.getElementById("loader-bar-fill").style.width = "10%";
+            document.getElementById("loader-status-text").innerText = "Iniciando a composição...";
+            
+            // Transiciona para a tela de Loader (Passo 7)
+            goToStep(7);
+            
             const response = await fetch("/api/order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -110,89 +123,26 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if (result.success) {
                 orderId = result.order.id;
-                checkoutUrl = result.checkout_url;
-                goToStep(6); // Pula direto para o pagamento!
+                // Inicia o polling dinâmico de composição da IA
+                pollPreviewStatus(orderId);
             } else {
                 alert("Erro ao preparar o pedido. Por favor, tente novamente.");
+                goToStep(4);
             }
         } catch (err) {
             console.error(err);
             alert("Erro de conexão com o servidor.");
+            goToStep(4);
         } finally {
             btn.disabled = false;
             btn.innerHTML = originalHTML;
         }
     });
 
-    // --- PASSO 6: PAGAMENTO (AÇÕES) ---
-    document.getElementById("btn-back-to-style").addEventListener("click", () => {
-        goToStep(4);
-    });
-
-    document.getElementById("btn-checkout").addEventListener("click", () => {
-        if (checkoutUrl) {
-            window.location.href = checkoutUrl;
-        } else {
-            alert("Erro ao direcionar para o pagamento. Por favor, reinicie o formulário.");
-        }
-    });
-
-    // --- GERAÇÃO DA PRÉVIA AUTOMÁTICA ---
-    async function startPreviewGeneration() {
-        const previewLoading = document.getElementById("preview-loading");
-        const previewReady = document.getElementById("preview-ready");
-        const previewStatusText = document.getElementById("preview-loader-status-text");
-        const previewBarFill = document.getElementById("preview-loader-bar-fill");
-        
-        // Inicializa estado visual
-        previewLoading.style.display = "block";
-        previewReady.style.display = "none";
-        
-        // Garante que o vinil comece girando no loading
-        const vinylDisc = document.getElementById("preview-vinyl-disc");
-        if (vinylDisc) {
-            vinylDisc.style.animationPlayState = "running";
-        }
-        
-        const payload = {
-            occasion: selectedOccasion,
-            receiver_name: document.getElementById("receiver_name").value.trim(),
-            story: document.getElementById("story").value.trim(),
-            style: selectedStyle
-        };
-        
-        try {
-            previewStatusText.innerText = "Preparando algo especial para você...";
-            previewBarFill.style.width = "10%";
-            
-            const response = await fetch("/api/order", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            const result = await response.json();
-            
-            if (result.success) {
-                orderId = result.order.id;
-                checkoutUrl = result.checkout_url;
-                
-                // Começa o polling do status da música em segundo plano
-                pollPreviewStatus(orderId);
-            } else {
-                previewStatusText.innerText = "Erro ao iniciar composição. Clique em voltar.";
-                previewStatusText.style.color = "red";
-            }
-        } catch (err) {
-            console.error(err);
-            previewStatusText.innerText = "Erro de conexão com o servidor.";
-            previewStatusText.style.color = "red";
-        }
-    }
-
-    // --- POLLING DE STATUS DA PRÉVIA ---
+    // --- POLLING DE STATUS DA COMPOSIÇÃO DA PRÉVIA ---
     function pollPreviewStatus(id) {
-        const previewBarFill = document.getElementById("preview-loader-bar-fill");
-        const previewStatusText = document.getElementById("preview-loader-status-text");
+        const previewBarFill = document.getElementById("loader-bar-fill");
+        const previewStatusText = document.getElementById("loader-status-text");
         
         let progress = 10;
         
@@ -231,7 +181,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     previewBarFill.style.width = "100%";
                     
                     setTimeout(() => {
-                        // Exibe a prévia
+                        // Exibe a prévia gratuita de 30 segundos
                         showPreviewReady(result);
                     }, 1000);
                 } 
@@ -239,6 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     clearInterval(intervalId);
                     previewStatusText.innerText = "Falha ao gerar a melodia. Por favor, tente novamente.";
                     previewStatusText.style.color = "red";
+                    setTimeout(() => { goToStep(4); }, 2000);
                 }
             } catch (err) {
                 console.error("Error polling preview status:", err);
@@ -246,31 +197,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 3000);
     }
 
-    // --- MONTAGEM DO PLAYER DE PRÉVIA CAPPED A 30s ---
+    // --- MONTAGEM DO PLAYER DE PRÉVIA CAPPED A 30s (Passo 5) ---
     function showPreviewReady(orderData) {
-        document.getElementById("preview-loading").style.display = "none";
-        document.getElementById("preview-ready").style.display = "block";
+        goToStep(5); // Vai para a tela de prévia
         
-
-
-        // Cria elemento de áudio
         if (previewAudio) {
             previewAudio.pause();
         }
         
         previewAudio = new Audio(orderData.audio_url);
-        
-        const toPaymentBtn = document.getElementById("btn-to-payment");
-        toPaymentBtn.style.display = "none"; // Garante oculto inicialmente
-        
-        // Exibe o botão de compra apenas quando o áudio estiver completamente carregado
-        previewAudio.oncanplaythrough = () => {
-            toPaymentBtn.style.display = "flex";
-        };
-        
-        if (previewAudio.readyState >= 3) {
-            toPaymentBtn.style.display = "flex";
-        }
         
         const playBtn = document.getElementById("preview-play-pause-btn");
         const playIcon = document.getElementById("preview-play-icon");
@@ -289,10 +224,9 @@ document.addEventListener("DOMContentLoaded", () => {
             vinylDisc.style.animationPlayState = "paused";
         }
 
-        // Bind Play/Pause
+        // Bind Play/Pause da prévia
         playBtn.onclick = () => {
             if (previewAudio.paused) {
-                // Se já estiver no limite dos 30 segundos e tentar tocar de novo
                 if (previewAudio.currentTime >= 30) {
                     previewAudio.currentTime = 0;
                     capNotice.style.display = "none";
@@ -317,11 +251,10 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         };
 
-        // Time update capping at 30 seconds
+        // Time update capping a 30s da prévia
         previewAudio.ontimeupdate = () => {
             const current = previewAudio.currentTime;
             
-            // Limitador de 30 segundos (Prévia)
             if (current >= 30) {
                 previewAudio.pause();
                 previewAudio.currentTime = 30;
@@ -339,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         };
 
-        // Permite seek apenas dentro dos 30 segundos
+        // Seek apenas dentro dos 30s
         progressBar.onclick = (e) => {
             const rect = progressBar.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
@@ -351,16 +284,180 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    // --- CONTROLE DE NAVEGAÇÃO DO WIZARD ---
-    function goToStep(step) {
-        // Oculta todos os passos
-        Object.values(steps).forEach(s => s.classList.remove("active"));
+    // Ação "Quero a música completa" (Passo 5 para Passo 6)
+    document.getElementById("btn-to-payment").addEventListener("click", async () => {
+        if (previewAudio) previewAudio.pause();
         
-        // Ativa o passo solicitado
+        const btn = document.getElementById("btn-to-payment");
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando PIX...';
+        
+        try {
+            const response = await fetch(`/api/order/${orderId}/payment-init`, {
+                method: "POST"
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                // Preenche dados do PIX
+                document.getElementById("pix-qr-image").src = "data:image/png;base64," + result.order.pix_qr_code_base64;
+                document.getElementById("pix-code-text").value = result.order.pix_copy_paste;
+                
+                // Inicia contagem regressiva e polling do PIX
+                startPixTimerAndPolling(result.order);
+                
+                goToStep(6); // Vai para tela de pagamento
+            } else {
+                alert("Falha ao inicializar o pagamento. Por favor, tente novamente.");
+            }
+        } catch (err) {
+            console.error("Erro ao gerar PIX:", err);
+            alert("Erro de conexão ao gerar o PIX.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+        }
+    });
+
+    // Ação "Refazer Prévia" (Passo 5 para Passo 4)
+    document.getElementById("btn-remake-preview").addEventListener("click", () => {
+        if (previewAudio) {
+            previewAudio.pause();
+            previewAudio = null;
+        }
+        goToStep(4);
+    });
+
+    // --- GERENCIAMENTO DE TIMERS E POLLING DO PIX (Passo 6) ---
+    function startPixTimerAndPolling(order) {
+        if (pixIntervalId) clearInterval(pixIntervalId);
+        if (pixCountdownId) clearInterval(pixCountdownId);
+        
+        let timeLeft = 1800; // 30 minutos
+        const timerEl = document.getElementById("pix-timer");
+        const btnCopy = document.getElementById("btn-copy-pix");
+        
+        timerEl.innerText = "30:00";
+        timerEl.style.color = "var(--primary-pink)";
+        btnCopy.disabled = false;
+        
+        // 1. Cronômetro regressivo
+        pixCountdownId = setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                clearInterval(pixCountdownId);
+                clearInterval(pixIntervalId);
+                timerEl.innerText = "EXPIRADO";
+                timerEl.style.color = "red";
+                btnCopy.disabled = true;
+                alert("O código PIX expirou. Por favor, reinicie a criação do pedido.");
+                return;
+            }
+            
+            const minutes = Math.floor(timeLeft / 60).toString().padStart(2, "0");
+            const seconds = (timeLeft % 60).toString().padStart(2, "0");
+            timerEl.innerText = `${minutes}:${seconds}`;
+        }, 1000);
+        
+        // 2. Polling automático de status a cada 10s
+        pixIntervalId = setInterval(async () => {
+            try {
+                const response = await fetch(`/api/order/${order.id}`);
+                const result = await response.json();
+                
+                if (result.success && result.payment_status === "approved") {
+                    clearInterval(pixIntervalId);
+                    clearInterval(pixCountdownId);
+                    
+                    // Configura loader para a liberação
+                    document.querySelector("#step-7 .step-title").innerText = "Sua Música foi Liberada!";
+                    document.querySelector("#step-7 .loader-subtitle").innerText = "Seu presente exclusivo está pronto! Redirecionando em instantes...";
+                    document.getElementById("loader-bar-fill").style.width = "100%";
+                    document.getElementById("loader-status-text").innerText = "Obra de arte liberada! Redirecionando...";
+                    
+                    goToStep(7);
+                    
+                    setTimeout(() => {
+                        window.location.href = `/musica/${order.id}`;
+                    }, 1500);
+                }
+            } catch (err) {
+                console.error("Erro no polling do PIX:", err);
+            }
+        }, 10000);
+    }
+
+    // --- PASSO 6: AÇÕES DO PAINEL PIX ---
+    document.getElementById("btn-back-to-style").addEventListener("click", () => {
+        if (pixIntervalId) clearInterval(pixIntervalId);
+        if (pixCountdownId) clearInterval(pixCountdownId);
+        goToStep(5); // Retorna para a tela de prévia
+    });
+
+    // Copiar código PIX
+    document.getElementById("btn-copy-pix").addEventListener("click", () => {
+        const copyInput = document.getElementById("pix-code-text");
+        copyInput.select();
+        copyInput.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyInput.value);
+        
+        const copyBtn = document.getElementById("btn-copy-pix");
+        const originalText = copyBtn.innerHTML;
+        copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copiado!';
+        copyBtn.style.background = "#4CAF50";
+        
+        setTimeout(() => {
+            copyBtn.innerHTML = originalText;
+            copyBtn.style.background = "";
+        }, 2000);
+    });
+
+    // Simulação de aprovação em Dev
+    document.getElementById("btn-pay-simulate-natively").addEventListener("click", async () => {
+        const btn = document.getElementById("btn-pay-simulate-natively");
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Aprovando PIX...';
+        
+        try {
+            const response = await fetch(`/api/order/${orderId}/pay-simulate`, {
+                method: "POST"
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                if (pixIntervalId) clearInterval(pixIntervalId);
+                if (pixCountdownId) clearInterval(pixCountdownId);
+                
+                document.querySelector("#step-7 .step-title").innerText = "Sua Música foi Liberada!";
+                document.querySelector("#step-7 .loader-subtitle").innerText = "Seu presente exclusivo está pronto! Redirecionando em instantes...";
+                document.getElementById("loader-bar-fill").style.width = "100%";
+                document.getElementById("loader-status-text").innerText = "Obra de arte liberada! Redirecionando...";
+                
+                goToStep(7);
+                
+                setTimeout(() => {
+                    window.location.href = `/musica/${orderId}`;
+                }, 1500);
+            } else {
+                alert("Falha na simulação do PIX.");
+                btn.disabled = false;
+                btn.innerHTML = "🚀 Simular Aprovação (Modo Desenvolvedor)";
+            }
+        } catch (err) {
+            console.error("Erro na simulação do PIX:", err);
+            alert("Erro de rede.");
+            btn.disabled = false;
+            btn.innerHTML = "🚀 Simular Aprovação (Modo Desenvolvedor)";
+        }
+    });
+
+    // --- NAVEGAÇÃO E WIZARD GENERALIZADO ---
+    function goToStep(step) {
+        Object.values(steps).forEach(s => s.classList.remove("active"));
         steps[step].classList.add("active");
         currentStep = step;
         
-        // Adiciona ou remove classe rosa do card principal
         const mainCard = document.getElementById("main-glass-card");
         if (mainCard) {
             if (step === 7) {
@@ -370,7 +467,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         
-        // Atualiza a barra de progresso (somente se for passos de preenchimento 1 a 6)
         if (step <= 6) {
             wizardProgress.style.display = "flex";
             updateProgressIndicators(step);
@@ -380,7 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateProgressIndicators(activeStep) {
-        const stepMapping = { 1: 0, 2: 25, 3: 50, 4: 75, 6: 100 };
+        const stepMapping = { 1: 0, 2: 20, 3: 40, 4: 60, 5: 80, 6: 100 };
         const fillPercentage = stepMapping[activeStep] !== undefined ? stepMapping[activeStep] : 0;
         progressBarFill.style.width = `${fillPercentage}%`;
         
@@ -390,49 +486,9 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if (stepNum === activeStep) {
                 dot.classList.add("active");
-            } else if (stepNum < activeStep || (activeStep === 6 && stepNum < 6)) {
+            } else if (stepNum < activeStep) {
                 dot.classList.add("completed");
             }
         });
-    }
-
-    // --- VERIFICA SE JÁ VOLTOU DO CHECKOUT SIMULADO (LIBERAÇÃO) ---
-    const urlParams = new URLSearchParams(window.location.search);
-    const paramOrderId = urlParams.get("order_id");
-    const paramStep = urlParams.get("step");
-    
-    if (paramOrderId && paramStep === "7") {
-        orderId = paramOrderId;
-        goToStep(7);
-        startPollingLiberacao(paramOrderId);
-    }
-
-    // --- POLLING APÓS PAGAMENTO (LIBERAÇÃO IMEDIATA) ---
-    function startPollingLiberacao(id) {
-        const loaderStatus = document.getElementById("loader-status-text");
-        
-        let attempts = 0;
-        const intervalId = setInterval(async () => {
-            attempts++;
-            try {
-                const response = await fetch(`/api/order/${id}`);
-                const result = await response.json();
-                
-                if (result.success && result.payment_status === "approved") {
-                    clearInterval(intervalId);
-                    loaderStatus.innerText = "Obra de arte liberada! Redirecionando...";
-                    
-                    setTimeout(() => {
-                        window.location.href = `/musica/${id}`;
-                    }, 1200);
-                } else if (attempts > 5) {
-                    // Força liberação se por acaso o webhook atrasar em simulação
-                    clearInterval(intervalId);
-                    window.location.href = `/musica/${id}`;
-                }
-            } catch (err) {
-                console.error("Error polling payment release:", err);
-            }
-        }, 1500);
     }
 });

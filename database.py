@@ -49,6 +49,12 @@ def init_sqlite_db():
             expires_at TEXT NOT NULL
         )
     """)
+    # Adiciona colunas extras para PIX se não existirem
+    for col in ["mp_payment_id", "pix_copy_paste", "pix_qr_code_base64"]:
+        try:
+            cursor.execute(f"ALTER TABLE orders ADD COLUMN {col} TEXT")
+        except sqlite3.OperationalError:
+            pass
     conn.commit()
     conn.close()
 

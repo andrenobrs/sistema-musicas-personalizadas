@@ -23,7 +23,7 @@
     <main class="app-container">
         <div class="glass-card" id="main-glass-card">
             
-            <!-- Barra de Progresso do Formulário (Visível apenas nas etapas de preenchimento 1 a 5) -->
+            <!-- Barra de Progresso do Formulário (Visível apenas nas etapas de preenchimento 1 a 6) -->
             <div id="wizard-progress" class="progress-bar-container">
                 <div class="progress-bar-line"></div>
                 <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
@@ -32,7 +32,8 @@
                 <div class="progress-dot" data-step="2">2</div>
                 <div class="progress-dot" data-step="3">3</div>
                 <div class="progress-dot" data-step="4">4</div>
-                <div class="progress-dot" data-step="6">5</div>
+                <div class="progress-dot" data-step="5">5</div>
+                <div class="progress-dot" data-step="6">6</div>
             </div>
 
             <!-- FORMULÁRIO MULTI-STEP -->
@@ -170,24 +171,108 @@
 
 
 
+                <!-- PASSO 5: Prévia Gratuita -->
+                <div class="form-step" id="step-5">
+                    <h2 class="step-title">Sua Prévia de 30s está Pronta! 🎵</h2>
+                    <p class="step-subtitle">Ouça o início da sua composição personalizada com exclusividade.</p>
+                    
+                    <div class="payment-box" style="padding: 1.8rem; gap: 1.5rem; display: flex; flex-direction: column; align-items: center;">
+                        <span class="payment-badge" style="margin-bottom: 0;">PRÉVIA GRATUITA (30 SEGUNDOS)</span>
+                        
+                        <!-- Vinil e Player Container -->
+                        <div class="preview-player-container" style="width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+                            <!-- Toca discos de vinil miniatura -->
+                            <div class="vinyl-wrapper" style="width: 120px; height: 120px; margin: 0 auto 0.5rem auto;">
+                                <div class="vinyl-disc" id="preview-vinyl-disc" style="width: 120px; height: 120px; animation-play-state: paused;">
+                                    <div class="vinyl-label" style="width: 40px; height: 40px; margin-top: -20px; margin-left: -20px;">
+                                        <i class="fa-solid fa-music" style="font-size: 1.2rem; color: var(--primary-pink);"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Player de Áudio Simplificado -->
+                            <div class="audio-controls" style="display: flex; align-items: center; gap: 1rem; width: 100%; background: rgba(0,0,0,0.02); padding: 0.8rem 1.2rem; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05);">
+                                <button type="button" id="preview-play-pause-btn" style="width: 45px; height: 45px; border-radius: 50%; border: none; background: var(--primary-pink); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; box-shadow: var(--shadow-button); transition: transform 0.2s;">
+                                    <i class="fa-solid fa-play" id="preview-play-icon"></i>
+                                </button>
+                                
+                                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                                    <div id="preview-audio-progress-bar" style="width: 100%; height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; cursor: pointer; position: relative; overflow: hidden;">
+                                        <div id="preview-audio-progress-fill" style="width: 0%; height: 100%; background: var(--primary-pink); border-radius: 3px; transition: width 0.1s linear;"></div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">
+                                        <span id="preview-current-time">00:00</span>
+                                        <span>00:30 (Prévia)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Aviso Capped -->
+                            <p id="preview-cap-notice" style="display: none; font-size: 0.85rem; font-weight: 600; color: var(--primary-pink); text-align: center; margin-top: 0.5rem; background: rgba(255, 105, 180, 0.08); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(255, 105, 180, 0.2);">
+                                <i class="fa-solid fa-lock"></i> Limite da prévia atingido! Adquira a música inteira.
+                            </p>
+                        </div>
+                        
+                        <!-- Texto Comercial -->
+                        <div style="text-align: center; margin-top: 0.5rem; max-width: 420px;">
+                            <h3 style="font-family: var(--font-title); color: var(--text-main); font-size: 1.25rem; margin-bottom: 0.4rem;">Gostou da sua prévia personalizada?</h3>
+                            <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.4;">
+                                Libere agora mesmo a <strong>composição completa em MP3 de alta qualidade</strong>, acesso vitalício e o link de compartilhamento por apenas <strong>R$ 29,90</strong>!
+                            </p>
+                        </div>
+                        
+                        <!-- Botões de Compra e Ajuste (Centralizados) -->
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.8rem; width: 100%; max-width: 320px; margin-top: 0.5rem;">
+                            <button type="button" class="btn-pink btn-full" id="btn-to-payment" style="font-size: 1.05rem; padding: 1rem 2rem; border-radius: 50px; font-weight: bold; box-shadow: var(--shadow-button); justify-content: center; align-items: center; display: flex;">
+                                🎵 Quero a música completa! (R$29,90)
+                            </button>
+                            <button type="button" class="btn-secondary btn-full" id="btn-remake-preview" style="background: transparent; border: none; color: var(--text-muted); text-decoration: underline; font-size: 0.9rem; font-weight: 500; cursor: pointer; padding: 0.3rem 1rem; box-shadow: none;">
+                                <i class="fa-solid fa-arrow-rotate-left"></i> Refazer prévia (Voltar)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- PASSO 6: Pagamento -->
                 <div class="form-step" id="step-6">
-                    <h2 class="step-title">Libere a Versão Completa em MP3</h2>
-                    <p class="step-subtitle">Adquira sua obra de arte completa por um valor único. Você terá acesso vitalício para ouvir e fazer download!</p>
+                    <h2 class="step-title">Pague via PIX Seguro</h2>
+                    <p class="step-subtitle">Escaneie o QR Code ou copie o código PIX abaixo para liberar sua composição instantaneamente por apenas R$ 29,90!</p>
                     
-                    <div class="payment-box">
-                        <span class="payment-badge">VALOR ÚNICO</span>
-                        <div class="price-title">R$ 29,90</div>
-                        <p class="price-subtitle">Liberação instantânea do áudio completo e download em alta qualidade.</p>
+                    <div class="payment-box" style="padding: 1.8rem; gap: 1.5rem; display: flex; flex-direction: column; align-items: center;">
+                        <span class="payment-badge" style="margin-bottom: 0;">VALOR ÚNICO: R$ 29,90</span>
                         
-                        <button type="button" class="btn-pink btn-full" id="btn-checkout">
-                            <i class="fa-solid fa-credit-card"></i> Ir para Pagamento Seguro
-                        </button>
-                        
-                        <div class="payment-guarantee">
-                            <i class="fa-solid fa-shield-halved"></i>
-                            <span>Pagamento intermediado via Mercado Pago</span>
+                        <!-- QR Code Container -->
+                        <div class="qr-code-wrapper" style="background: white; padding: 12px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: inline-block;">
+                            <img id="pix-qr-image" src="" alt="QR Code PIX" style="width: 180px; height: 180px; display: block; border-radius: 6px;">
                         </div>
+                        
+                        <!-- Timer Regressivo -->
+                        <div class="timer-wrapper" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 105, 180, 0.1); padding: 0.5rem 1.2rem; border-radius: 50px; font-weight: bold; color: var(--primary-pink);">
+                            <i class="fa-regular fa-clock fa-spin"></i>
+                            <span>Expira em: </span>
+                            <span id="pix-timer" style="font-family: monospace; font-size: 1.1rem;">30:00</span>
+                        </div>
+
+                        <!-- Copia e Cola Container -->
+                        <div class="copia-cola-wrapper" style="width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); text-align: left;">Código Copia e Cola:</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="pix-code-text" readonly style="flex: 1; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); background: rgba(0,0,0,0.02); font-size: 0.9rem; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; outline: none; font-family: monospace;" value="">
+                                <button type="button" class="btn-pink" id="btn-copy-pix" style="padding: 0 1.2rem; border-radius: 8px; font-size: 0.9rem; white-space: nowrap;">
+                                    <i class="fa-solid fa-copy"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-status-notifier" style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-muted); font-weight: 500;">
+                            <i class="fa-solid fa-circle-notch fa-spin" style="color: var(--primary-pink);"></i>
+                            <span>Aguardando aprovação... (Polling automático)</span>
+                        </div>
+                        
+                        <!-- Botão de Simulação em Dev -->
+                        <button type="button" class="btn-secondary btn-full" id="btn-pay-simulate-natively" style="background: transparent; border: 1px dashed rgba(255,107,139,0.5); color: var(--primary-pink); padding: 0.8rem; font-size: 0.85rem; font-weight: bold; border-radius: 50px; cursor: pointer; margin-top: 0.5rem; transition: background 0.2s;">
+                            🚀 Simular Aprovação (Modo Desenvolvedor)
+                        </button>
                     </div>
                     
                     <div class="buttons-navigation">

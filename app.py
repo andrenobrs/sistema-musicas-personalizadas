@@ -2,7 +2,7 @@ import os
 import threading
 import time
 import builtins
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from dotenv import load_dotenv
 
@@ -21,7 +21,7 @@ import suno_service as suno
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "musicas_personalizadas_secret_key_129847")
 
-MERCADO_AGO_ACCESS_TOKEN = os.getenv("MERCADO_AGO_ACCESS_TOKEN")
+MERCADO_PAGO_ACCESS_TOKEN = os.getenv("MERCADO_PAGO_ACCESS_TOKEN") or os.getenv("MERCADO_AGO_ACCESS_TOKEN")
 
 def process_music_generation_background(order_id):
     """Gera a letra e compose a música em segundo plano para não travar a requisição."""
@@ -124,7 +124,7 @@ def home():
 
 @app.route("/api/order", methods=["POST"])
 def create_order():
-    """Cria um pedido pendente e gera a sessão de pagamento."""
+    """Cria um pedido pendente e dispara a geração da prévia/música imediatamente."""
     data = request.json
     if not data:
         return jsonify({"error": "Dados ausentes"}), 400
@@ -141,44 +141,16 @@ def create_order():
     # Salva o pedido inicial no banco de dados
     order = db.create_order(occasion, giver_name, receiver_name, story, style)
     
-    checkout_url = f"/checkout-mp/{order['id']}" # Link interno para simulação/checkout real
+    # Dispara a geração de música em segundo plano IMEDIATAMENTE (Etapa 2 - Prévia)
+    threading.Thread(
+        target=process_music_generation_background,
+        args=(order["id"],),
+        daemon=True
+    ).start()
     
-    # Se houver credenciais reais do Mercado Pago configuradas, podemos gerar uma preferência real
-    if MERCADO_AGO_ACCESS_TOKEN:
-        try:
-            import mercadopago
-            sdk = mercadopago.SDK(MERCADO_AGO_ACCESS_TOKEN)
-            preference_data = {
-                "items": [
-                    {
-                        "title": f"Música Personalizada - {occasion} ({receiver_name})",
-                        "quantity": 1,
-                        "unit_price": 29.90,
-                        "currency_id": "BRL"
-                    }
-                ],
-                "back_urls": {
-                    "success": request.host_url + f"musica/{order['id']}?payment=success",
-                    "failure": request.host_url + f"?payment=failed",
-                    "pending": request.host_url + f"?payment=pending"
-                },
-                "auto_return": "approved",
-                "external_reference": order["id"],
-                "notification_url": request.host_url + "api/webhook/mercadopago"
-            }
-            preference_response = sdk.preference().create(preference_data)
-            preference = preference_response["response"]
-            
-            # Atualiza o checkout_url com a preferência oficial de sandbox ou produção do Mercado Pago
-            # Dependendo se é sandbox ou produção (preference["sandbox_init_point"] ou init_point)
-            checkout_url = preference.get("init_point") or preference.get("sandbox_init_point") or checkout_url
-        except Exception as e:
-            print(f"Mercado Pago configuration failed: {e}. Using simulated payment gateway.")
-            
     return jsonify({
         "success": True,
-        "order": order,
-        "checkout_url": checkout_url
+        "order": order
     })
 
 @app.route("/checkout-mp/<order_id>")
@@ -189,6 +161,82 @@ def checkout_mp_simulated(order_id):
         return "Pedido não encontrado", 404
         
     return render_template("checkout.html", order=order)
+
+@app.route("/api/order/<order_id>/payment-init", methods=["POST"])
+def payment_init(order_id):
+    """Gera um pagamento PIX real ou simulado no Mercado Pago para o pedido."""
+    import uuid
+    order = db.get_order(order_id)
+    if not order:
+        return jsonify({"error": "Pedido não encontrado"}), 404
+        
+    # Se já tiver gerado o PIX anteriormente, apenas retorna o pedido atual
+    if order.get("mp_payment_id") and order.get("pix_copy_paste") and order.get("pix_qr_code_base64"):
+        return jsonify({
+            "success": True,
+            "order": order
+        })
+        
+    mp_payment_id = None
+    pix_copy_paste = None
+    pix_qr_code_base64 = None
+    
+    # Se houver credenciais reais do Mercado Pago configuradas, tenta gerar o PIX real
+    if MERCADO_PAGO_ACCESS_TOKEN:
+        try:
+            import mercadopago
+            sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+            
+            # Expiração do PIX em 30 minutos
+            expiration_time = (datetime.utcnow() + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+            
+            payment_data = {
+                "transaction_amount": 29.90,
+                "description": f"Música Personalizada - {order['occasion']} ({order['receiver_name']})",
+                "payment_method_id": "pix",
+                "date_of_expiration": expiration_time,
+                "payer": {
+                    "email": "cliente@amoremcancao.com.br",
+                    "first_name": order["receiver_name"] or "Cliente",
+                    "last_name": "AmorEmCancao"
+                }
+            }
+            
+            payment_response = sdk.payment().create(payment_data)
+            payment = payment_response["response"]
+            
+            if payment.get("id"):
+                mp_payment_id = str(payment.get("id"))
+                point_of_interaction = payment.get("point_of_interaction", {})
+                transaction_data = point_of_interaction.get("transaction_data", {})
+                
+                pix_copy_paste = transaction_data.get("qr_code")
+                pix_qr_code_base64 = transaction_data.get("qr_code_base64")
+                print(f"PIX generated successfully in Mercado Pago. Payment ID: {mp_payment_id}")
+            else:
+                print(f"Mercado Pago returned response without payment ID: {payment}")
+        except Exception as e:
+            print(f"Mercado Pago PIX generation failed: {e}. Falling back to simulated PIX.")
+            
+    # Fallback/Simulação de PIX caso não haja chaves ou tenha falhado
+    if not mp_payment_id or not pix_copy_paste or not pix_qr_code_base64:
+        mp_payment_id = f"mock_mp_{uuid.uuid4().hex[:8]}"
+        pix_copy_paste = f"00020101021226870014br.gov.bcb.pix0125mock-pix-key-amoremcancao520400005303986540529.905802BR5920Amor em Cancao LTDA6009Sao Paulo62070503{order['id'][:8]}"
+        # PNG minúsculo de QR Code que funciona como placeholder visual impecável:
+        pix_qr_code_base64 = "iVBORw0KGgoAAAANSUhEUgAAAJQAAACUCAYAAAB1ee8RAAAAAXNSR0IArs4c6QAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9sJEg0uKz12C3wAAAAdaVRYdENvbW1lbnQAAAAAAENyZWF0ZWQgd2l0aCBHSU1QG5GP0QAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ8vuPBoAAAEGSURBVHja7d0xDhNRAETh924EIgQCgRByEi4BIUTuApeACKEh4BKIEDmBkJNwCUSInG4gEEiG1WplU4X/8WemG0u29v2epN1kG26Pj/cfsT2+PX0AAAAA4H+eZzN2F9sFAAAAAHgZ98fH+4v53fH4+HgRAAAAAPAeAAAAwBqN3cV9sz197AIAAAAAPuD++Hh/cb/YHgEAAAAAnrB32x4BAAAAALyG3e0RAAAAAMAK7G6PAAAAAICV2D/aHgEAAAAAnrBvtj0CAAAAADxhLzM9AgAAAAA8Ye/pEQAAAADgDXuvbXoEAAAAAHjC3tP3CAAAAADwL7tD7RIAAAAAMFMDt0fsAgAAAAC8jv2/7RIAAAAAMPMSw0uMBhDkFNAAAAAElFTkSuQmCC"
+        print(f"Using simulated PIX payment data (Mock ID: {mp_payment_id})")
+
+    # Atualiza o pedido no banco com os campos do PIX
+    updated_order = db.update_order(order_id, {
+        "mp_payment_id": mp_payment_id,
+        "pix_copy_paste": pix_copy_paste,
+        "pix_qr_code_base64": pix_qr_code_base64
+    })
+    
+    return jsonify({
+        "success": True,
+        "order": updated_order
+    })
 
 @app.route("/api/order/<order_id>/pay-simulate", methods=["POST"])
 def pay_simulate(order_id):
@@ -226,6 +274,32 @@ def get_order_status(order_id):
     if not order:
         return jsonify({"error": "Pedido não encontrado"}), 404
         
+    # Se o pagamento ainda estiver pendente e for um ID do Mercado Pago real, consulta status atual
+    mp_payment_id = order.get("mp_payment_id")
+    if order["payment_status"] == "pending" and mp_payment_id and not mp_payment_id.startswith("mock_"):
+        if MERCADO_PAGO_ACCESS_TOKEN:
+            try:
+                import mercadopago
+                sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+                payment_response = sdk.payment().get(mp_payment_id)
+                payment_info = payment_response["response"]
+                
+                status = payment_info.get("status")
+                if status == "approved":
+                    # Atualiza pagamento para aprovado
+                    order = db.update_order(order_id, {"payment_status": "approved"})
+                    print(f"Payment {mp_payment_id} approved dynamically during status polling!")
+                    
+                    # Dispara a geração de música em segundo plano se não tiver sido iniciada ainda
+                    if order["status"] == "pending":
+                        threading.Thread(
+                            target=process_music_generation_background,
+                            args=(order_id,),
+                            daemon=True
+                        ).start()
+            except Exception as e:
+                print(f"Failed to poll payment status from Mercado Pago: {e}")
+
     return jsonify({
         "success": True,
         "status": order["status"],
@@ -233,7 +307,9 @@ def get_order_status(order_id):
         "audio_url": order["audio_url"],
         "image_url": order["image_url"],
         "lyrics": order["lyrics"],
-        "expires_at": order["expires_at"]
+        "expires_at": order["expires_at"],
+        "pix_copy_paste": order.get("pix_copy_paste"),
+        "pix_qr_code_base64": order.get("pix_qr_code_base64")
     })
 
 @app.route("/musica/<order_id>")
